@@ -1,0 +1,16 @@
+[package]
+name = "so-sysinfo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+gethostname = "0.5.0"
+human_bytes = "0.4.3"
+indexmap = "2.3.0"
+libmacchina = "7.3.0"
+os_info = "3.8.2"
+ratatui = "0.27.0"
+so-logo-ascii-generator-core = { path = "../so-logo-ascii-generator/core" }
+sysinfo = "0.31.2"
+tui-nodes = "0.5.0"

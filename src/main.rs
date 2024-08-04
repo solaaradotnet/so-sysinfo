@@ -1,0 +1,143 @@
+use anyhow::Result;
+use gethostname::gethostname;
+use indexmap::IndexMap;
+use so_logo_ascii_generator_core::generate;
+use std::{cmp::max, collections::HashMap, io::stdout, str::FromStr};
+use tui_nodes::{NodeGraph, NodeLayout};
+use utils::{
+    get_cpu, get_de, get_model, get_os, get_shell, get_system_memory, get_terminal, get_wm,
+};
+
+use ratatui::{
+    backend::CrosstermBackend,
+    crossterm::{
+        event::{self, KeyCode, KeyEventKind},
+        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+        ExecutableCommand,
+    },
+    layout::{Constraint, Layout},
+    style::{Color, Style, Stylize},
+    text::{Line, Text},
+    widgets::{block::Title, Block, Borders, Clear, Paragraph, Wrap},
+    Terminal,
+};
+
+pub mod model_impl;
+mod utils;
+
+fn main() -> Result<()> {
+    stdout().execute(EnterAlternateScreen)?;
+    enable_raw_mode()?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+    terminal.clear()?;
+
+    let fg_color = Color::from_str("#FFF1A4")?;
+
+    let hostname = gethostname();
+    let hostname = hostname.to_str().unwrap();
+
+    let logo_text = generate("SOLAARA", true)?;
+    let logo_text_height = logo_text.lines().count();
+    let logo_text_width = logo_text.lines().map(|l| l.len()).max().unwrap();
+    let logo_text = Text::from(logo_text).fg(fg_color);
+
+    let system_info = sysinfo::System::new_all();
+    let os_info = os_info::get();
+
+    let graph_contents: IndexMap<&str, (String, u16)> = [
+        ("[ CPU ]", (get_cpu(), 1)),                       // IDX 0: CPU
+        ("[ RAM ]", (get_system_memory(&system_info), 1)), // IDX 1: RAM
+        ("[ Model ]", (get_model(), 2)),                   // IDX 3: System
+        ("[ OS ]", (get_os(&os_info), 2)),                 // IDX 3: OS
+        ("[ Shell ]", (get_shell(&system_info), 1)),       // IDX 4: Shell
+        ("[ Terminal ]", (get_terminal(), 1)),             // IDX 5: Terminal
+        ("[ DE ]", (get_de(), 1)),                         // IDX 6: DE
+        ("[ WM ]", (get_wm(), 1)),                         // IDX 7: WM
+    ]
+    .into();
+
+    loop {
+        terminal.draw(|frame| {
+            let area = frame.size();
+
+            let main_layout = Layout::vertical([
+                Constraint::Length(logo_text_height as u16),
+                Constraint::Fill(1),
+            ])
+            .split(area);
+
+            let logo_text_layout = Layout::horizontal([Constraint::Length(logo_text_width as u16)])
+                .flex(ratatui::layout::Flex::Center)
+                .split(main_layout[0]);
+
+            frame.render_widget(Clear, logo_text_layout[0]);
+            frame.render_widget(&logo_text, logo_text_layout[0]);
+
+            let window_widget = Block::new()
+                .border_type(ratatui::widgets::BorderType::Rounded)
+                .border_style(Style::new().fg(fg_color))
+                .borders(Borders::ALL)
+                .title(
+                    Title::from(" ".to_owned() + hostname + " ")
+                        .alignment(ratatui::layout::Alignment::Center),
+                )
+                .title_bottom(Line::from(" so-sysinfo ").right_aligned());
+            frame.render_widget(&window_widget, main_layout[1]);
+            let window_inner_area = window_widget.inner(main_layout[1]);
+
+            if area.height < 27 {
+                frame.render_widget(
+                    Paragraph::new(
+                        "Window too small. Resize to have at least 27 lines to show system graph.",
+                    )
+                    .red()
+                    .centered(),
+                    window_inner_area,
+                );
+            } else {
+                let mut system_info_nodes_graph = NodeGraph::new(
+                    graph_contents
+                        .iter()
+                        .map(|(title, (contents, height))| {
+                            tui_nodes::NodeLayout::new((
+                                (max(contents.len(), title.len()) + 2) as u16,
+                                2 + height,
+                            ))
+                            .with_title(title)
+                        })
+                        .collect::<Vec<_>>(),
+                    vec![
+                        tui_nodes::Connection::new(0, 0, 2, 0), // CPU -> Model
+                        tui_nodes::Connection::new(1, 0, 2, 1), // RAM -> Model
+                        tui_nodes::Connection::new(2, 0, 3, 0), // Model -> OS
+                        tui_nodes::Connection::new(3, 1, 7, 0), // OS -> WM
+                        tui_nodes::Connection::new(3, 1, 6, 0), // OS -> DE
+                        tui_nodes::Connection::new(3, 0, 5, 0), // OS -> Terminal
+                        tui_nodes::Connection::new(5, 0, 4, 0), // Terminal -> Shell
+                    ],
+                    window_inner_area.width.into(),
+                    window_inner_area.height.into(),
+                );
+                system_info_nodes_graph.calculate();
+                let zones = system_info_nodes_graph.split(window_inner_area);
+                for (idx, ea_zone) in zones.into_iter().enumerate() {
+                    frame.render_widget(
+                        Paragraph::new(graph_contents[idx].0.to_string()).centered(),
+                        ea_zone,
+                    );
+                }
+                frame.render_stateful_widget(system_info_nodes_graph, window_inner_area, &mut ());
+            }
+        })?;
+        if event::poll(std::time::Duration::from_millis(16))? {
+            if let event::Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
+                    break;
+                }
+            }
+        }
+    }
+    stdout().execute(LeaveAlternateScreen)?;
+    disable_raw_mode()?;
+    Ok(())
+}
