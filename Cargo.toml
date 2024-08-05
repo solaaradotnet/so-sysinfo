@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
-gethostname = "0.5.0"
 human_bytes = "0.4.3"
 indexmap = "2.3.0"
 libmacchina = "7.3.0"

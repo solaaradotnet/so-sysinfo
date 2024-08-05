@@ -1,9 +1,9 @@
 use anyhow::Result;
-use gethostname::gethostname;
 use indexmap::IndexMap;
+use libmacchina::{traits::GeneralReadout as _, GeneralReadout};
 use so_logo_ascii_generator_core::generate;
-use std::{cmp::max, collections::HashMap, io::stdout, str::FromStr};
-use tui_nodes::{NodeGraph, NodeLayout};
+use std::{cmp::max, io::stdout, str::FromStr};
+use tui_nodes::NodeGraph;
 use utils::{
     get_cpu, get_de, get_model, get_os, get_shell, get_system_memory, get_terminal, get_wm,
 };
@@ -18,7 +18,7 @@ use ratatui::{
     layout::{Constraint, Layout},
     style::{Color, Style, Stylize},
     text::{Line, Text},
-    widgets::{block::Title, Block, Borders, Clear, Paragraph, Wrap},
+    widgets::{block::Title, Block, Borders, Clear, Paragraph},
     Terminal,
 };
 
@@ -33,26 +33,27 @@ fn main() -> Result<()> {
 
     let fg_color = Color::from_str("#FFF1A4")?;
 
-    let hostname = gethostname();
-    let hostname = hostname.to_str().unwrap();
+    let system_info = sysinfo::System::new_all();
+    let os_info = os_info::get();
+
+    let readout = GeneralReadout::new();
+
+    let hostname = readout.hostname().unwrap();
 
     let logo_text = generate("SOLAARA", true)?;
     let logo_text_height = logo_text.lines().count();
     let logo_text_width = logo_text.lines().map(|l| l.len()).max().unwrap();
     let logo_text = Text::from(logo_text).fg(fg_color);
 
-    let system_info = sysinfo::System::new_all();
-    let os_info = os_info::get();
-
     let graph_contents: IndexMap<&str, (String, u16)> = [
-        ("[ CPU ]", (get_cpu(), 1)),                       // IDX 0: CPU
+        ("[ CPU ]", (get_cpu(&readout), 1)),               // IDX 0: CPU
         ("[ RAM ]", (get_system_memory(&system_info), 1)), // IDX 1: RAM
-        ("[ Model ]", (get_model(), 2)),                   // IDX 3: System
-        ("[ OS ]", (get_os(&os_info), 2)),                 // IDX 3: OS
+        ("[ Model ]", (get_model(&readout), 2)),           // IDX 3: System
+        ("[ OS ]", (get_os(&readout, &os_info), 2)),       // IDX 3: OS
         ("[ Shell ]", (get_shell(&system_info), 1)),       // IDX 4: Shell
-        ("[ Terminal ]", (get_terminal(), 1)),             // IDX 5: Terminal
-        ("[ DE ]", (get_de(), 1)),                         // IDX 6: DE
-        ("[ WM ]", (get_wm(), 1)),                         // IDX 7: WM
+        ("[ Terminal ]", (get_terminal(&readout), 1)),     // IDX 5: Terminal
+        ("[ DE ]", (get_de(&readout), 1)),                 // IDX 6: DE
+        ("[ WM ]", (get_wm(&readout), 1)),                 // IDX 7: WM
     ]
     .into();
 
@@ -78,7 +79,7 @@ fn main() -> Result<()> {
                 .border_style(Style::new().fg(fg_color))
                 .borders(Borders::ALL)
                 .title(
-                    Title::from(" ".to_owned() + hostname + " ")
+                    Title::from(" ".to_owned() + hostname.as_ref() + " ")
                         .alignment(ratatui::layout::Alignment::Center),
                 )
                 .title_bottom(Line::from(" so-sysinfo ").right_aligned());

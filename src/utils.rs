@@ -1,47 +1,24 @@
-use libmacchina::GeneralReadout;
-use std::collections::HashMap;
+use libmacchina::{traits::GeneralReadout as _, GeneralReadout};
 use sysinfo::get_current_pid;
-
-use gethostname::gethostname;
-pub fn get_hostname() -> String {
-    let hostname = gethostname();
-    let potentially_fqdn = hostname.to_string_lossy();
-
-    let hostname = potentially_fqdn.split('.').take(1).collect::<String>();
-
-    hostname
-}
 
 pub fn get_system_memory(system_info: &sysinfo::System) -> String {
     human_bytes::human_bytes(system_info.total_memory() as f64)
 }
 
-pub fn get_cpu() -> String {
-    use libmacchina::traits::GeneralReadout as _;
-    let general_readout = GeneralReadout::new();
+pub fn get_cpu(readout: &GeneralReadout) -> String {
+    let cores = readout.cpu_cores().expect("Failed to get cpu cores");
 
-    let cores = general_readout
-        .cpu_cores()
-        .expect("Failed to get desktop environment");
-
-    let cpu_model = general_readout
-        .cpu_model_name()
-        .expect("Failed to get desktop environment");
+    let cpu_model = readout.cpu_model_name().expect("Failed to get cpu model");
 
     format!("{cores}x {cpu_model}")
 }
 
-pub fn get_os(os_info: &os_info::Info) -> String {
-    format!(
-        "{} {} ({})",
-        os_info.os_type(),
-        os_info.version(),
-        os_info.architecture().unwrap_or_default()
-    )
+pub fn get_os(readout: &GeneralReadout, os_info: &os_info::Info) -> String {
+    readout.os_name().unwrap() + " " + os_info.architecture().unwrap_or_default()
 }
 
-pub fn get_model() -> String {
-    crate::model_impl::get_model()
+pub fn get_model(readout: &GeneralReadout) -> String {
+    readout.machine().expect("Couldn't get machine info")
 }
 
 pub fn get_shell(system_info: &sysinfo::System) -> String {
@@ -57,29 +34,20 @@ pub fn get_shell(system_info: &sysinfo::System) -> String {
     shell.to_string()
 }
 
-pub fn get_de() -> String {
-    use libmacchina::traits::GeneralReadout as _;
-    let general_readout = GeneralReadout::new();
-
-    general_readout
+pub fn get_de(readout: &GeneralReadout) -> String {
+    readout
         .desktop_environment()
         .expect("Failed to get desktop environment")
 }
 
-pub fn get_wm() -> String {
-    use libmacchina::traits::GeneralReadout as _;
-    let general_readout = GeneralReadout::new();
-
-    general_readout
+pub fn get_wm(readout: &GeneralReadout) -> String {
+    readout
         .window_manager()
-        .expect("Failed to get desktop environment")
+        .expect("Failed to get window manager")
 }
 
-pub fn get_terminal() -> String {
-    use libmacchina::traits::GeneralReadout as _;
-    let general_readout = GeneralReadout::new();
-
-    general_readout
+pub fn get_terminal(readout: &GeneralReadout) -> String {
+    readout
         .terminal()
-        .expect("Failed to get desktop environment")
+        .expect("Failed to get terminal application")
 }
