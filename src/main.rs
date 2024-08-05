@@ -22,7 +22,6 @@ use ratatui::{
     Terminal,
 };
 
-pub mod model_impl;
 mod utils;
 
 fn main() -> Result<()> {
