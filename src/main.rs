@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Error, Result};
 use indexmap::IndexMap;
 use libmacchina::{traits::GeneralReadout as _, GeneralReadout};
 use so_logo_ascii_generator_core::generate;
@@ -9,7 +9,7 @@ use utils::{
 };
 
 use ratatui::{
-    backend::CrosstermBackend,
+    backend::{Backend, CrosstermBackend},
     crossterm::{
         event::{self, KeyCode, KeyEventKind},
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -30,6 +30,19 @@ fn main() -> Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     terminal.clear()?;
 
+    let res = app(terminal);
+
+    stdout().execute(LeaveAlternateScreen)?;
+    disable_raw_mode()?;
+
+    if let Err(error) = res {
+        println!("{error}");
+    }
+
+    Ok(())
+}
+
+fn app<T: Backend>(mut terminal: ratatui::Terminal<T>) -> Result<()> {
     let fg_color = Color::from_str("#FFF1A4")?;
 
     let system_info = sysinfo::System::new_all();
@@ -37,24 +50,40 @@ fn main() -> Result<()> {
 
     let readout = GeneralReadout::new();
 
-    let hostname = readout.hostname().unwrap();
+    let hostname = readout
+        .hostname()
+        .map_err(|_| Error::msg("Failed to get hostname."))?;
 
     let logo_text = generate("SOLAARA", true)?;
     let logo_text_height = logo_text.lines().count();
-    let logo_text_width = logo_text.lines().map(|l| l.len()).max().unwrap();
+    let logo_text_width = logo_text
+        .lines()
+        .map(|l| l.len())
+        .max()
+        .ok_or(Error::msg("uhhh"))?;
     let logo_text = Text::from(logo_text).fg(fg_color);
 
     let graph_contents: IndexMap<&str, (String, u16)> = [
-        ("[ CPU ]", (get_cpu(&readout), 1)),               // IDX 0: CPU
+        ("[ CPU ]", (get_cpu(&readout)?, 1)),              // IDX 0: CPU
         ("[ RAM ]", (get_system_memory(&system_info), 1)), // IDX 1: RAM
         ("[ Model ]", (get_model(&readout), 2)),           // IDX 3: System
-        ("[ OS ]", (get_os(&readout, &os_info), 2)),       // IDX 3: OS
-        ("[ Shell ]", (get_shell(&system_info), 1)),       // IDX 4: Shell
-        ("[ Terminal ]", (get_terminal(&readout), 1)),     // IDX 5: Terminal
-        ("[ DE ]", (get_de(&readout), 1)),                 // IDX 6: DE
-        ("[ WM ]", (get_wm(&readout), 1)),                 // IDX 7: WM
+        ("[ OS ]", (get_os(&readout, &os_info)?, 2)),      // IDX 3: OS
+        ("[ Shell ]", (get_shell(&system_info)?, 1)),      // IDX 4: Shell
+        ("[ Terminal ]", (get_terminal(&readout)?, 1)),    // IDX 5: Terminal
+        ("[ DE ]", (get_de(&readout)?, 1)),                // IDX 6: DE
+        ("[ WM ]", (get_wm(&readout)?, 1)),                // IDX 7: WM
     ]
     .into();
+
+    let graph_links: Vec<(usize, usize, usize, usize)> = vec![
+        (0, 0, 2, 0), // CPU -> Model
+        (1, 0, 2, 1), // RAM -> Model
+        (2, 0, 3, 0), // Model -> OS
+        (3, 1, 7, 0), // OS -> WM
+        (3, 1, 6, 0), // OS -> DE
+        (3, 0, 5, 0), // OS -> Terminal
+        (5, 0, 4, 0), // Terminal -> Shell
+    ];
 
     loop {
         terminal.draw(|frame| {
@@ -106,15 +135,12 @@ fn main() -> Result<()> {
                             .with_title(title)
                         })
                         .collect::<Vec<_>>(),
-                    vec![
-                        tui_nodes::Connection::new(0, 0, 2, 0), // CPU -> Model
-                        tui_nodes::Connection::new(1, 0, 2, 1), // RAM -> Model
-                        tui_nodes::Connection::new(2, 0, 3, 0), // Model -> OS
-                        tui_nodes::Connection::new(3, 1, 7, 0), // OS -> WM
-                        tui_nodes::Connection::new(3, 1, 6, 0), // OS -> DE
-                        tui_nodes::Connection::new(3, 0, 5, 0), // OS -> Terminal
-                        tui_nodes::Connection::new(5, 0, 4, 0), // Terminal -> Shell
-                    ],
+                    graph_links
+                        .iter()
+                        .map(|(from_node, from_port, to_node, to_port)| {
+                            tui_nodes::Connection::new(*from_node, *from_port, *to_node, *to_port)
+                        })
+                        .collect::<Vec<_>>(),
                     window_inner_area.width.into(),
                     window_inner_area.height.into(),
                 );
@@ -129,6 +155,7 @@ fn main() -> Result<()> {
                 frame.render_stateful_widget(system_info_nodes_graph, window_inner_area, &mut ());
             }
         })?;
+
         if event::poll(std::time::Duration::from_millis(16))? {
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
@@ -137,7 +164,6 @@ fn main() -> Result<()> {
             }
         }
     }
-    stdout().execute(LeaveAlternateScreen)?;
-    disable_raw_mode()?;
+
     Ok(())
 }
