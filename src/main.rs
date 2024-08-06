@@ -1,13 +1,6 @@
 use anyhow::{Error, Result};
 use indexmap::IndexMap;
 use libmacchina::{traits::GeneralReadout as _, GeneralReadout};
-use so_logo_ascii_generator_core::generate;
-use std::{cmp::max, io::stdout, str::FromStr};
-use tui_nodes::NodeGraph;
-use utils::{
-    get_cpu, get_de, get_model, get_os, get_shell, get_system_memory, get_terminal, get_wm,
-};
-
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
@@ -21,8 +14,14 @@ use ratatui::{
     widgets::{block::Title, Block, Borders, Clear, Paragraph},
     Terminal,
 };
+use so_logo_ascii_generator_core::generate;
+use std::{cmp::max, io::stdout, str::FromStr};
+use tui_nodes::NodeGraph;
 
 mod utils;
+use utils::{
+    get_cpu, get_de, get_model, get_os, get_shell, get_system_memory, get_terminal, get_wm,
+};
 
 fn main() -> Result<()> {
     stdout().execute(EnterAlternateScreen)?;
@@ -63,6 +62,7 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>) -> Result<()> {
         .ok_or(Error::msg("uhhh"))?;
     let logo_text = Text::from(logo_text).fg(fg_color);
 
+    // TODO: rework this into something more resilient that can handle optional nodes
     let graph_contents: IndexMap<&str, (String, u16)> = [
         ("[ CPU ]", (get_cpu(&readout)?, 1)),              // IDX 0: CPU
         ("[ RAM ]", (get_system_memory(&system_info), 1)), // IDX 1: RAM
