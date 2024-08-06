@@ -1371,6 +1371,7 @@ checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 [[package]]
 name = "so-logo-ascii-generator-core"
 version = "0.1.0"
+source = "git+ssh://git@github.com/solaaradotnet/so-logo-ascii-generator#62033a7ae6ca9a37b300cb860b1391273e6e9d06"
 dependencies = [
  "chrono",
  "figrs",
@@ -1379,7 +1380,7 @@ dependencies = [
 
 [[package]]
 name = "so-sysinfo"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "human_bytes",
