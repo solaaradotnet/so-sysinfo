@@ -3,6 +3,7 @@ name = "so-sysinfo"
 version = "0.1.2"
 edition = "2021"
 authors = ["IAMSolaara"]
+license = "BSD-3-Clause"
 
 [dependencies]
 anyhow = "1.0.86"
