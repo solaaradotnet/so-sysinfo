@@ -1,32 +1,36 @@
 use anyhow::{Error, Result};
-use libmacchina::{traits::GeneralReadout as _, GeneralReadout};
+use libmacchina::{
+    traits::GeneralReadout as _, traits::MemoryReadout as _, GeneralReadout, MemoryReadout,
+};
 
 lazy_static::lazy_static! {
     static ref SYSINFO_DATA: sysinfo::System = sysinfo::System::new_all();
     static ref OS_INFO_DATA: os_info::Info = os_info::get();
-    static ref LIBMACCHINA_READOUT: GeneralReadout = libmacchina::GeneralReadout::new();
-}
-
-pub(crate) fn get_system_memory() -> String {
-    human_bytes::human_bytes(SYSINFO_DATA.total_memory() as f64)
+    static ref LIBMACCHINA_GENERAL_READOUT: GeneralReadout = libmacchina::GeneralReadout::new();
+    static ref LIBMACCHINA_MEMORY_READOUT: MemoryReadout = libmacchina::MemoryReadout::new();
 }
 
 pub(crate) fn get_cpu() -> Result<String> {
-    let cores = LIBMACCHINA_READOUT
+    let cores = LIBMACCHINA_GENERAL_READOUT
         .cpu_cores()
         .map_err(|_| Error::msg("Failed to get CPU core count."))?;
 
-    let cpu_model = LIBMACCHINA_READOUT
+    let cpu_model = LIBMACCHINA_GENERAL_READOUT
         .cpu_model_name()
         .map_err(|_| Error::msg("Failed to get CPU model name."))?;
 
     Ok(format!("{cores}x {cpu_model}"))
 }
 
+pub(crate) fn get_system_memory() -> String {
+    let total_memory_in_kb = LIBMACCHINA_MEMORY_READOUT.total().unwrap();
+    human_bytes::human_bytes((total_memory_in_kb * 1024) as f64)
+}
+
 pub(crate) fn get_os() -> Result<String> {
-    let os_name = LIBMACCHINA_READOUT
+    let os_name = LIBMACCHINA_GENERAL_READOUT
         .os_name()
-        .or_else(|_| LIBMACCHINA_READOUT.distribution())
+        .or_else(|_| LIBMACCHINA_GENERAL_READOUT.distribution())
         .unwrap_or("Unknown".to_string());
 
     let arch = OS_INFO_DATA
@@ -37,7 +41,7 @@ pub(crate) fn get_os() -> Result<String> {
 }
 
 pub(crate) fn get_model() -> String {
-    LIBMACCHINA_READOUT
+    LIBMACCHINA_GENERAL_READOUT
         .machine()
         .unwrap_or("Generic".to_string())
 }
@@ -68,28 +72,28 @@ pub(crate) fn get_shell() -> Result<String> {
 }
 
 pub(crate) fn get_de() -> Result<String> {
-    LIBMACCHINA_READOUT
+    LIBMACCHINA_GENERAL_READOUT
         .desktop_environment()
         //.map_err(|_| Error::msg("Failed to get desktop environment")) TODO: do this better
         .or(Ok("N/A".to_string()))
 }
 
 pub(crate) fn get_wm() -> Result<String> {
-    LIBMACCHINA_READOUT
+    LIBMACCHINA_GENERAL_READOUT
         .window_manager()
         //.map_err(|_| Error::msg("Failed to get window manager")) TODO: do this better
         .or(Ok("N/A".to_string()))
 }
 
 pub(crate) fn get_terminal() -> Result<String> {
-    LIBMACCHINA_READOUT
+    LIBMACCHINA_GENERAL_READOUT
         .terminal()
         //.map_err(|_| Error::msg("Failed to get terminal application")) TODO: do this better
         .or(Ok("N/A".to_string()))
 }
 
 pub(crate) fn get_hostname() -> Result<String> {
-    LIBMACCHINA_READOUT
+    LIBMACCHINA_GENERAL_READOUT
         .hostname()
         .map_err(|_| Error::msg("Failed to get hostname."))
 }
