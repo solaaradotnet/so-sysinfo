@@ -1,6 +1,5 @@
 use anyhow::{Error, Result};
-use indexmap::IndexMap;
-use libmacchina::{traits::GeneralReadout as _, GeneralReadout};
+use collection::collect;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
@@ -15,13 +14,10 @@ use ratatui::{
     Terminal,
 };
 use so_logo_ascii_generator_core::generate;
-use std::{cmp::max, io::stdout, str::FromStr};
-use tui_nodes::NodeGraph;
+use std::{io::stdout, rc::Rc, str::FromStr, time::Instant};
+use tui_nodes::{NodeGraph, NodeLayout};
 
-mod utils;
-use utils::{
-    get_cpu, get_de, get_model, get_os, get_shell, get_system_memory, get_terminal, get_wm,
-};
+mod collection;
 
 fn main() -> Result<()> {
     stdout().execute(EnterAlternateScreen)?;
@@ -44,14 +40,7 @@ fn main() -> Result<()> {
 fn app<T: Backend>(mut terminal: ratatui::Terminal<T>) -> Result<()> {
     let fg_color = Color::from_str("#FFF1A4")?;
 
-    let system_info = sysinfo::System::new_all();
-    let os_info = os_info::get();
-
-    let readout = GeneralReadout::new();
-
-    let hostname = readout
-        .hostname()
-        .map_err(|_| Error::msg("Failed to get hostname."))?;
+    let hostname = collection::utils::get_hostname()?;
 
     let logo_text = generate("SOLAARA", true)?;
     let logo_text_height = logo_text.lines().count();
@@ -62,30 +51,21 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>) -> Result<()> {
         .ok_or(Error::msg("uhhh"))?;
     let logo_text = Text::from(logo_text).fg(fg_color);
 
-    // TODO: rework this into something more resilient that can handle optional nodes
-    let graph_contents: IndexMap<&str, (String, u16)> = [
-        ("[ CPU ]", (get_cpu(&readout)?, 1)),              // IDX 0: CPU
-        ("[ RAM ]", (get_system_memory(&system_info), 1)), // IDX 1: RAM
-        ("[ Model ]", (get_model(&readout), 2)),           // IDX 3: System
-        ("[ OS ]", (get_os(&readout, &os_info)?, 2)),      // IDX 3: OS
-        ("[ Shell ]", (get_shell(&system_info)?, 1)),      // IDX 4: Shell
-        ("[ Terminal ]", (get_terminal(&readout)?, 1)),    // IDX 5: Terminal
-        ("[ DE ]", (get_de(&readout)?, 1)),                // IDX 6: DE
-        ("[ WM ]", (get_wm(&readout)?, 1)),                // IDX 7: WM
-    ]
-    .into();
+    let now = Instant::now();
+    let (nodes, links) = collect()?;
+    let elapsed = now.elapsed().as_millis();
 
-    let graph_links: Vec<(usize, usize, usize, usize)> = vec![
-        (0, 0, 2, 0), // CPU -> Model
-        (1, 0, 2, 1), // RAM -> Model
-        (2, 0, 3, 0), // Model -> OS
-        (3, 1, 7, 0), // OS -> WM
-        (3, 1, 6, 0), // OS -> DE
-        (3, 0, 5, 0), // OS -> Terminal
-        (5, 0, 4, 0), // Terminal -> Shell
-    ];
+    let bottom_text = format!(" so-sysinfo (took {elapsed}ms) ");
+
+    let nodes = Rc::new(nodes);
+    let links = Rc::new(links);
 
     loop {
+        let graph_nodes = nodes
+            .iter()
+            .map(|node| NodeLayout::new((node.width, node.height)).with_title(node.title))
+            .collect();
+
         terminal.draw(|frame| {
             let area = frame.size();
 
@@ -110,7 +90,7 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>) -> Result<()> {
                     Title::from(" ".to_owned() + hostname.as_ref() + " ")
                         .alignment(ratatui::layout::Alignment::Center),
                 )
-                .title_bottom(Line::from(" so-sysinfo ").right_aligned());
+                .title_bottom(Line::from(bottom_text.clone()).right_aligned());
             frame.render_widget(&window_widget, main_layout[1]);
             let window_inner_area = window_widget.inner(main_layout[1]);
 
@@ -125,32 +105,16 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>) -> Result<()> {
                 );
             } else {
                 let mut system_info_nodes_graph = NodeGraph::new(
-                    graph_contents
-                        .iter()
-                        .map(|(title, (contents, height))| {
-                            tui_nodes::NodeLayout::new((
-                                (max(contents.len(), title.len()) + 2) as u16,
-                                2 + height,
-                            ))
-                            .with_title(title)
-                        })
-                        .collect::<Vec<_>>(),
-                    graph_links
-                        .iter()
-                        .map(|(from_node, from_port, to_node, to_port)| {
-                            tui_nodes::Connection::new(*from_node, *from_port, *to_node, *to_port)
-                        })
-                        .collect::<Vec<_>>(),
+                    graph_nodes,
+                    links.to_vec(),
                     window_inner_area.width.into(),
                     window_inner_area.height.into(),
                 );
                 system_info_nodes_graph.calculate();
                 let zones = system_info_nodes_graph.split(window_inner_area);
                 for (idx, ea_zone) in zones.into_iter().enumerate() {
-                    frame.render_widget(
-                        Paragraph::new(graph_contents[idx].0.to_string()).centered(),
-                        ea_zone,
-                    );
+                    frame
+                        .render_widget(Paragraph::new(nodes[idx].body.clone()).centered(), ea_zone);
                 }
                 frame.render_stateful_widget(system_info_nodes_graph, window_inner_area, &mut ());
             }
