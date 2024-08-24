@@ -30,9 +30,7 @@ fn main() -> Result<()> {
     stdout().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
 
-    if let Err(error) = res {
-        println!("{error}");
-    }
+    res?;
 
     Ok(())
 }
