@@ -1,6 +1,6 @@
 [package]
 name = "so-sysinfo"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 authors = ["IAMSolaara"]
 license = "BSD-3-Clause"
@@ -8,10 +8,16 @@ license = "BSD-3-Clause"
 [dependencies]
 anyhow = "1.0.86"
 human_bytes = "0.4.3"
-indexmap = "2.3.0"
+lazy_static = "1.5.0"
 libmacchina = "7.3.0"
 os_info = "3.8.2"
 ratatui = "0.27.0"
 so-logo-ascii-generator-core = { git = "https://github.com/solaaradotnet/so-logo-ascii-generator" }
+strum = "0.26.3"
 sysinfo = "0.31.2"
 tui-nodes = "0.5.0"
+
+[profile.release]
+strip = true
+lto = true
+opt-level = "z"

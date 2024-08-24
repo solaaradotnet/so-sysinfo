@@ -1,0 +1,231 @@
+use anyhow::{Error, Result};
+use std::{cmp::max, collections::HashMap, fmt::Display};
+use strum::IntoEnumIterator;
+use tui_nodes::Connection;
+
+pub(crate) mod utils;
+use utils::{
+    get_cpu, get_de, get_model, get_os, get_shell, get_system_memory, get_terminal, get_wm,
+};
+
+#[derive(strum::EnumIter, Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
+enum SystemComponentKind {
+    Cpu,
+    SystemMemory,
+    Gpu,
+    BoardModel,
+    OperatingSystem,
+    CurrentShell,
+    TerminalEmulator,
+    WindowManager,
+    DesktopEnvironment,
+}
+
+impl Display for SystemComponentKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
+        write!(
+            f,
+            "[ {} ]",
+            match self {
+                SystemComponentKind::Cpu => "CPU",
+                SystemComponentKind::SystemMemory => "RAM",
+                SystemComponentKind::Gpu => "GPU",
+                SystemComponentKind::OperatingSystem => "OS",
+                SystemComponentKind::BoardModel => "Model",
+                SystemComponentKind::CurrentShell => "Shell",
+                SystemComponentKind::TerminalEmulator => "Terminal",
+                SystemComponentKind::DesktopEnvironment => "DE",
+                SystemComponentKind::WindowManager => "WM",
+            }
+        )
+    }
+}
+
+struct ComponentLinks {
+    pub from_self: &'static [SystemComponentKind],
+    pub to_self: &'static [SystemComponentKind],
+}
+
+impl SystemComponentKind {
+    pub fn title(&self) -> &'static str {
+        match self {
+            SystemComponentKind::Cpu => "[ CPU ]",
+            SystemComponentKind::SystemMemory => "[ RAM ]",
+            SystemComponentKind::Gpu => "[ GPU ]",
+            SystemComponentKind::BoardModel => "[ Model ]",
+            SystemComponentKind::OperatingSystem => "[ OS ]",
+            SystemComponentKind::CurrentShell => "[ Shell ]",
+            SystemComponentKind::TerminalEmulator => "[ Terminal ]",
+            SystemComponentKind::DesktopEnvironment => "[ DE ]",
+            SystemComponentKind::WindowManager => "[ WM ]",
+        }
+    }
+    pub fn collect_info(&self) -> Result<Vec<String>> {
+        match self {
+            SystemComponentKind::Cpu => Ok(vec![get_cpu()?]),
+            SystemComponentKind::SystemMemory => Ok(vec![get_system_memory()]),
+            SystemComponentKind::BoardModel => Ok(vec![get_model()]),
+            SystemComponentKind::CurrentShell => Ok(vec![get_shell()?]),
+            SystemComponentKind::TerminalEmulator => Ok(vec![get_terminal()?]),
+            SystemComponentKind::DesktopEnvironment => Ok(vec![get_de()?]),
+            SystemComponentKind::WindowManager => Ok(vec![get_wm()?]),
+            SystemComponentKind::Gpu => Err(Error::msg("N/A")),
+            SystemComponentKind::OperatingSystem => Ok(vec![get_os()?]),
+        }
+    }
+
+    pub const fn get_links(&self) -> ComponentLinks {
+        match self {
+            Self::Cpu => ComponentLinks {
+                from_self: &[Self::BoardModel],
+                to_self: &[],
+            },
+            Self::SystemMemory => ComponentLinks {
+                from_self: &[Self::BoardModel],
+                to_self: &[],
+            },
+            Self::Gpu => ComponentLinks {
+                from_self: &[Self::BoardModel],
+                to_self: &[],
+            },
+            Self::BoardModel => ComponentLinks {
+                from_self: &[Self::OperatingSystem],
+                to_self: &[Self::Cpu, Self::Gpu, Self::SystemMemory],
+            },
+            Self::OperatingSystem => ComponentLinks {
+                from_self: &[
+                    Self::TerminalEmulator,
+                    Self::DesktopEnvironment,
+                    Self::WindowManager,
+                ],
+                to_self: &[Self::BoardModel],
+            },
+            Self::TerminalEmulator => ComponentLinks {
+                from_self: &[Self::CurrentShell],
+                to_self: &[Self::OperatingSystem],
+            },
+            Self::CurrentShell => ComponentLinks {
+                from_self: &[],
+                to_self: &[Self::CurrentShell],
+            },
+            Self::DesktopEnvironment => ComponentLinks {
+                from_self: &[],
+                to_self: &[Self::OperatingSystem],
+            },
+            Self::WindowManager => ComponentLinks {
+                from_self: &[],
+                to_self: &[Self::OperatingSystem],
+            },
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct CollectedNode {
+    pub index: usize,
+    pub width: u16,
+    pub height: u16,
+    pub title: &'static str,
+    pub body: String,
+}
+
+pub(crate) fn collect() -> Result<(Vec<CollectedNode>, Vec<Connection>)> {
+    let partial_nodes: Vec<_> = SystemComponentKind::iter()
+        .filter_map(|kind| {
+            let info = kind.collect_info();
+            if let Ok(info) = info {
+                if !info.is_empty() {
+                    Some((kind, info))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .fold(vec![], |mut acc, (kind, info)| {
+            for ele in info {
+                let node_title = kind.title();
+                let node_links = kind.get_links();
+                let node_width = (max(ele.len(), node_title.len()) + 2) as u16;
+                let node_height =
+                    2 + max(node_links.from_self.len(), node_links.to_self.len()) as u16;
+
+                acc.push((kind, node_width, node_height, node_title, ele))
+            }
+            acc
+        })
+        .into_iter()
+        .enumerate()
+        .map(|(idx, (kind, node_width, node_height, node_title, ele))| {
+            (idx, kind, node_width, node_height, node_title, ele)
+        })
+        .collect();
+
+    let mut source_ports: HashMap<usize, Vec<usize>> = HashMap::new();
+    let mut dest_ports: HashMap<usize, Vec<usize>> = HashMap::new();
+
+    partial_nodes.iter().for_each(|(idx, kind, _, _, _, _)| {
+        let dest_ports = dest_ports.entry(*idx).or_default();
+        for dst in partial_nodes.iter() {
+            if dst.1.get_links().from_self.contains(kind) {
+                dest_ports.push(dst.0);
+                source_ports.entry(dst.0).or_default().push(*idx);
+            }
+        }
+    });
+
+    let source_ports: HashMap<_, _> = source_ports
+        .into_iter()
+        .map(|(k, v)| {
+            let stuff: Vec<_> = v.into_iter().enumerate().collect();
+            (k, stuff)
+        })
+        .collect();
+
+    let dest_ports: HashMap<_, _> = dest_ports
+        .into_iter()
+        .map(|(k, v)| {
+            let stuff: Vec<_> = v.into_iter().enumerate().collect();
+            (k, stuff)
+        })
+        .collect();
+
+    let links = dest_ports
+        .into_iter()
+        .flat_map(|(dst_idx, links_to_me)| {
+            // (from_node, from_port, to_node, to_port)
+            let test: Vec<_> = links_to_me
+                .into_iter()
+                .map(|(dst_port, src_idx)| {
+                    let src_ports = &source_ports[&src_idx];
+                    let me = src_ports
+                        .iter()
+                        .find(|src_port| src_port.1 == dst_idx)
+                        .unwrap();
+                    let src_port = me.0;
+
+                    (src_idx, src_port, dst_idx, dst_port)
+                })
+                .map(|(src_idx, src_port, dst_idx, dst_port)| {
+                    Connection::new(src_idx, src_port, dst_idx, dst_port)
+                })
+                .collect();
+
+            test
+        })
+        .collect();
+
+    let nodes = partial_nodes
+        .into_iter()
+        .map(|(index, _, width, height, title, body)| CollectedNode {
+            index,
+            width,
+            height,
+            title,
+            body,
+        })
+        .collect();
+
+    Ok((nodes, links))
+}
