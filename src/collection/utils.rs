@@ -74,22 +74,19 @@ pub(crate) fn get_shell() -> Result<String> {
 pub(crate) fn get_de() -> Result<String> {
     LIBMACCHINA_GENERAL_READOUT
         .desktop_environment()
-        //.map_err(|_| Error::msg("Failed to get desktop environment")) TODO: do this better
-        .or(Ok("N/A".to_string()))
+        .map_err(|_| Error::msg("Failed to get desktop environment"))
 }
 
 pub(crate) fn get_wm() -> Result<String> {
     LIBMACCHINA_GENERAL_READOUT
         .window_manager()
-        //.map_err(|_| Error::msg("Failed to get window manager")) TODO: do this better
-        .or(Ok("N/A".to_string()))
+        .map_err(|_| Error::msg("Failed to get window manager"))
 }
 
 pub(crate) fn get_terminal() -> Result<String> {
     LIBMACCHINA_GENERAL_READOUT
         .terminal()
-        //.map_err(|_| Error::msg("Failed to get terminal application")) TODO: do this better
-        .or(Ok("N/A".to_string()))
+        .map_err(|_| Error::msg("Failed to get terminal application"))
 }
 
 pub(crate) fn get_hostname() -> Result<String> {
