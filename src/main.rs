@@ -9,15 +9,15 @@ use ratatui::{
     },
     layout::{Constraint, Layout},
     style::{Color, Style, Stylize},
-    text::{Line, Text},
+    text::Line,
     widgets::{block::Title, Block, Borders, Clear, Paragraph},
     Terminal,
 };
-use so_logo_ascii_generator_core::generate;
 use std::{io::stdout, rc::Rc, str::FromStr, time::Instant};
 use tui_nodes::{NodeGraph, NodeLayout};
 
 mod collection;
+mod logos;
 
 fn main() -> Result<()> {
     stdout().execute(EnterAlternateScreen)?;
@@ -40,20 +40,14 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>) -> Result<()> {
 
     let hostname = collection::utils::get_hostname()?;
 
-    let logo_text = generate("SOLAARA", true)?;
-    let logo_text_height = logo_text.lines().count();
-    let logo_text_width = logo_text
-        .lines()
-        .map(|l| l.len())
-        .max()
-        .ok_or(Error::msg("uhhh"))?;
-    let logo_text = Text::from(logo_text).fg(fg_color);
+    let (logo_text, logo_text_width, logo_text_height) = logos::get(logos::LogoKind::Shadow)?;
+    let logo_text = logo_text.fg(fg_color);
 
     let now = Instant::now();
     let (nodes, links) = collect()?;
     let elapsed = now.elapsed().as_millis();
 
-    let bottom_text = format!(" so-sysinfo (took {elapsed}ms) ");
+    let bottom_text = format!(" took {elapsed}ms ");
 
     let nodes = Rc::new(nodes);
     let links = Rc::new(links);
@@ -71,7 +65,7 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>) -> Result<()> {
                 Constraint::Length(logo_text_height as u16),
                 Constraint::Fill(1),
             ])
-            .split(area);
+                .split(area);
 
             let logo_text_layout = Layout::horizontal([Constraint::Length(logo_text_width as u16)])
                 .flex(ratatui::layout::Flex::Center)
@@ -88,7 +82,7 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>) -> Result<()> {
                     Title::from(" ".to_owned() + hostname.as_ref() + " ")
                         .alignment(ratatui::layout::Alignment::Center),
                 )
-                .title_bottom(Line::from(bottom_text.clone()).right_aligned());
+                .title_bottom(Line::from(bottom_text.clone()).right_aligned().italic().dim());
             frame.render_widget(&window_widget, main_layout[1]);
             let window_inner_area = window_widget.inner(main_layout[1]);
 
@@ -97,8 +91,8 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>) -> Result<()> {
                     Paragraph::new(
                         "Window too small. Resize to have at least 27 lines to show system graph.",
                     )
-                    .red()
-                    .centered(),
+                        .red()
+                        .centered(),
                     window_inner_area,
                 );
             } else {
