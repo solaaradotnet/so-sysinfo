@@ -75,34 +75,25 @@ impl SystemComponentKind {
         match self {
             Self::Cpu => &[Self::BoardModel],
 
-            Self::SystemMemory => 
-            &[Self::BoardModel],
+            Self::SystemMemory => &[Self::BoardModel],
 
-            Self::Gpu => 
-            &[Self::BoardModel],
+            Self::Gpu => &[Self::BoardModel],
 
-            Self::BoardModel => 
-            &[Self::OperatingSystem],
+            Self::BoardModel => &[Self::OperatingSystem],
 
-            Self::OperatingSystem => 
-            &[
+            Self::OperatingSystem => &[
                 Self::TerminalEmulator,
                 Self::DesktopEnvironment,
                 Self::WindowManager,
             ],
 
-            Self::TerminalEmulator => 
-            &[Self::CurrentShell],
+            Self::TerminalEmulator => &[Self::CurrentShell],
 
-            Self::CurrentShell => 
-            &[],
+            Self::CurrentShell => &[],
 
-            Self::DesktopEnvironment => 
-            &[],
+            Self::DesktopEnvironment => &[],
 
-            Self::WindowManager => 
-            &[],
-
+            Self::WindowManager => &[],
         }
     }
 }
@@ -118,30 +109,20 @@ pub(crate) struct CollectedNode {
 pub(crate) fn collect() -> Result<(Vec<CollectedNode>, Vec<Connection>)> {
     let partial_nodes: Vec<_> = SystemComponentKind::iter()
         .filter_map(|kind| {
-            let info = kind.collect_info();
-            if let Ok(info) = info {
-                if !info.is_empty() {
-                    Some(
-                        info.into_iter().map(move |info| (kind, info))
-                    )
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
+            if let Ok(info) = kind.collect_info() {
+                return Some(info.into_iter().map(move |info| (kind, info)));
+            };
+            None
         })
         .flatten()
         .enumerate()
-        .map(|(idx, (kind,  ele))| {
-            (idx, kind, ele)
-        })
+        .map(|(idx, (kind, ele))| (idx, kind, ele))
         .collect();
 
     let mut source_ports: HashMap<usize, Vec<usize>> = HashMap::new();
     let mut dest_ports: HashMap<usize, Vec<usize>> = HashMap::new();
 
-    partial_nodes.iter().for_each(|(idx, kind,  _)| {
+    partial_nodes.iter().for_each(|(idx, kind, _)| {
         let dest_ports = dest_ports.entry(*idx).or_default();
         for dst in partial_nodes.iter() {
             if dst.1.get_links().contains(kind) {
@@ -199,18 +180,18 @@ pub(crate) fn collect() -> Result<(Vec<CollectedNode>, Vec<Connection>)> {
 
             let width = (max(body.len(), title.len()) + 2) as u16;
 
-            let left_side_height = dest_ports.get(&index).map(|c|c.len()).unwrap_or(0);
-            let right_side_height = source_ports.get(&index).map(|c|c.len()).unwrap_or(0);
+            let left_side_height = dest_ports.get(&index).map(|c| c.len()).unwrap_or(0);
+            let right_side_height = source_ports.get(&index).map(|c| c.len()).unwrap_or(0);
 
-            let height =
-            2 + max(left_side_height, right_side_height) as u16;
+            let height = 2 + max(left_side_height, right_side_height) as u16;
 
             CollectedNode {
                 width,
                 height,
                 title,
                 body,
-            }})
+            }
+        })
         .collect();
 
     Ok((nodes, links))

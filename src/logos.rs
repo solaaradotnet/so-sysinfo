@@ -1,11 +1,9 @@
 use anyhow::{Error, Result};
 use clap::ValueEnum;
-use ratatui::text::Text;
 use so_logo_ascii_generator::generate;
 use unicode_segmentation::UnicodeSegmentation;
 
-static GRAFFITI_LOGO: &str = 
-"
+static GRAFFITI_LOGO: &str = "
 .▄▄ ·           .▄▄ ·  ▄· ▄▌.▄▄ · ▪   ▐ ▄ ·▄▄▄
 ▐█ ▀. ▪         ▐█ ▀. ▐█▪██▌▐█ ▀. ██ •█▌▐█▐▄▄·▪
 ▄▀▀▀█▄ ▄█▀▄     ▄▀▀▀█▄▐█▌▐█▪▄▀▀▀█▄▐█·▐█▐▐▌██▪  ▄█▀▄
@@ -38,6 +36,6 @@ pub(crate) fn get(which: LogoKind) -> Result<(Text<'static>, usize, usize)> {
 #[derive(Debug, ValueEnum, Clone, Copy)]
 pub(crate) enum LogoKind {
     Shadow,
-    Graffiti
+    Graffiti,
 }
 
