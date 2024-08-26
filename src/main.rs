@@ -1,4 +1,4 @@
-use anyhow::{Error, Result};
+use anyhow::Result;
 use clap::Parser;
 use collection::collect;
 use ratatui::{
@@ -45,8 +45,8 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
 
     let hostname = collection::utils::get_hostname()?;
 
-    let (logo_text, logo_text_width, logo_text_height) = logos::get(logos::LogoKind::Shadow)?;
-    let logo_text = logo_text.fg(fg_color);
+    let (logo_text, mut logo_text_width, mut logo_text_height) = logos::get(args.logo_kind)?;
+    let mut logo_text = logo_text.fg(fg_color);
 
     let now = Instant::now();
     let (nodes, links) = collect()?;
@@ -121,6 +121,16 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
                     break;
+                }
+                if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('c') {
+                    let new_kind = match args.logo_kind {
+                        logos::LogoKind::Shadow => logos::LogoKind::Graffiti,
+                        logos::LogoKind::Graffiti => logos::LogoKind::Shadow,
+                    };
+
+                    args.logo_kind = new_kind;
+                    (logo_text, logo_text_width, logo_text_height) = logos::get(args.logo_kind)?;
+                    logo_text = logo_text.fg(fg_color);
                 }
             }
         }
