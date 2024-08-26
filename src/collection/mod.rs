@@ -41,10 +41,7 @@ impl Display for SystemComponentKind {
     }
 }
 
-struct ComponentLinks {
-    pub from_self: &'static [SystemComponentKind],
-    pub to_self: &'static [SystemComponentKind],
-}
+type ComponentLinks = &'static [SystemComponentKind];
 
 impl SystemComponentKind {
     pub fn title(&self) -> &'static str {
@@ -76,46 +73,36 @@ impl SystemComponentKind {
 
     pub const fn get_links(&self) -> ComponentLinks {
         match self {
-            Self::Cpu => ComponentLinks {
-                from_self: &[Self::BoardModel],
-                to_self: &[],
-            },
-            Self::SystemMemory => ComponentLinks {
-                from_self: &[Self::BoardModel],
-                to_self: &[],
-            },
-            Self::Gpu => ComponentLinks {
-                from_self: &[Self::BoardModel],
-                to_self: &[],
-            },
-            Self::BoardModel => ComponentLinks {
-                from_self: &[Self::OperatingSystem],
-                to_self: &[Self::Cpu, Self::Gpu, Self::SystemMemory],
-            },
-            Self::OperatingSystem => ComponentLinks {
-                from_self: &[
-                    Self::TerminalEmulator,
-                    Self::DesktopEnvironment,
-                    Self::WindowManager,
-                ],
-                to_self: &[Self::BoardModel],
-            },
-            Self::TerminalEmulator => ComponentLinks {
-                from_self: &[Self::CurrentShell],
-                to_self: &[Self::OperatingSystem],
-            },
-            Self::CurrentShell => ComponentLinks {
-                from_self: &[],
-                to_self: &[Self::CurrentShell],
-            },
-            Self::DesktopEnvironment => ComponentLinks {
-                from_self: &[],
-                to_self: &[Self::OperatingSystem],
-            },
-            Self::WindowManager => ComponentLinks {
-                from_self: &[],
-                to_self: &[Self::OperatingSystem],
-            },
+            Self::Cpu => &[Self::BoardModel],
+
+            Self::SystemMemory => 
+            &[Self::BoardModel],
+
+            Self::Gpu => 
+            &[Self::BoardModel],
+
+            Self::BoardModel => 
+            &[Self::OperatingSystem],
+
+            Self::OperatingSystem => 
+            &[
+                Self::TerminalEmulator,
+                Self::DesktopEnvironment,
+                Self::WindowManager,
+            ],
+
+            Self::TerminalEmulator => 
+            &[Self::CurrentShell],
+
+            Self::CurrentShell => 
+            &[],
+
+            Self::DesktopEnvironment => 
+            &[],
+
+            Self::WindowManager => 
+            &[],
+
         }
     }
 }
@@ -168,7 +155,7 @@ pub(crate) fn collect() -> Result<(Vec<CollectedNode>, Vec<Connection>)> {
     partial_nodes.iter().for_each(|(idx, kind, _, _, _, _)| {
         let dest_ports = dest_ports.entry(*idx).or_default();
         for dst in partial_nodes.iter() {
-            if dst.1.get_links().from_self.contains(kind) {
+            if dst.1.get_links().contains(kind) {
                 dest_ports.push(dst.0);
                 source_ports.entry(dst.0).or_default().push(*idx);
             }
