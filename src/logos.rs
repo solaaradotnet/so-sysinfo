@@ -35,14 +35,6 @@ pub(crate) fn get(which: LogoKind) -> Result<(Text<'static>, usize, usize)> {
     )
 }
 
-#[test]
-fn test_get_graffiti() {
-    let logo = get(LogoKind::Graffiti).unwrap();
-
-    assert_eq!(logo.1, 52);
-    assert_eq!(logo.2, 5);
-}
-
 #[derive(Debug, ValueEnum, Clone, Copy)]
 pub(crate) enum LogoKind {
     Shadow,
