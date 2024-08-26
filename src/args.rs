@@ -7,4 +7,6 @@ use crate::logos::LogoKind;
 pub(crate) struct Args {
     #[arg(short, long = "logo", default_value = "shadow")]
     pub logo_kind: LogoKind,
+    #[arg(short = 'c', long = "fg-color", default_value = "solaara-gold")]
+    pub fg_color: crate::FgColor,
 }
