@@ -109,7 +109,6 @@ impl SystemComponentKind {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct CollectedNode {
-    pub index: usize,
     pub width: u16,
     pub height: u16,
     pub title: &'static str,
@@ -122,7 +121,9 @@ pub(crate) fn collect() -> Result<(Vec<CollectedNode>, Vec<Connection>)> {
             let info = kind.collect_info();
             if let Ok(info) = info {
                 if !info.is_empty() {
-                    Some((kind, info))
+                    Some(
+                        info.into_iter().map(move |info| (kind, info))
+                    )
                 } else {
                     None
                 }
@@ -130,29 +131,17 @@ pub(crate) fn collect() -> Result<(Vec<CollectedNode>, Vec<Connection>)> {
                 None
             }
         })
-        .fold(vec![], |mut acc, (kind, info)| {
-            for ele in info {
-                let node_title = kind.title();
-                let node_links = kind.get_links();
-                let node_width = (max(ele.len(), node_title.len()) + 2) as u16;
-                let node_height =
-                    2 + max(node_links.from_self.len(), node_links.to_self.len()) as u16;
-
-                acc.push((kind, node_width, node_height, node_title, ele))
-            }
-            acc
-        })
-        .into_iter()
+        .flatten()
         .enumerate()
-        .map(|(idx, (kind, node_width, node_height, node_title, ele))| {
-            (idx, kind, node_width, node_height, node_title, ele)
+        .map(|(idx, (kind,  ele))| {
+            (idx, kind, ele)
         })
         .collect();
 
     let mut source_ports: HashMap<usize, Vec<usize>> = HashMap::new();
     let mut dest_ports: HashMap<usize, Vec<usize>> = HashMap::new();
 
-    partial_nodes.iter().for_each(|(idx, kind, _, _, _, _)| {
+    partial_nodes.iter().for_each(|(idx, kind,  _)| {
         let dest_ports = dest_ports.entry(*idx).or_default();
         for dst in partial_nodes.iter() {
             if dst.1.get_links().contains(kind) {
@@ -179,23 +168,23 @@ pub(crate) fn collect() -> Result<(Vec<CollectedNode>, Vec<Connection>)> {
         .collect();
 
     let links = dest_ports
-        .into_iter()
+        .iter()
         .flat_map(|(dst_idx, links_to_me)| {
             // (from_node, from_port, to_node, to_port)
             let test: Vec<_> = links_to_me
-                .into_iter()
+                .iter()
                 .map(|(dst_port, src_idx)| {
                     let src_ports = &source_ports[&src_idx];
                     let me = src_ports
                         .iter()
-                        .find(|src_port| src_port.1 == dst_idx)
+                        .find(|src_port| src_port.1 == *dst_idx)
                         .unwrap();
                     let src_port = me.0;
 
                     (src_idx, src_port, dst_idx, dst_port)
                 })
                 .map(|(src_idx, src_port, dst_idx, dst_port)| {
-                    Connection::new(src_idx, src_port, dst_idx, dst_port)
+                    Connection::new(*src_idx, src_port, *dst_idx, *dst_port)
                 })
                 .collect();
 
@@ -205,13 +194,23 @@ pub(crate) fn collect() -> Result<(Vec<CollectedNode>, Vec<Connection>)> {
 
     let nodes = partial_nodes
         .into_iter()
-        .map(|(index, _, width, height, title, body)| CollectedNode {
-            index,
-            width,
-            height,
-            title,
-            body,
-        })
+        .map(|(index, kind, body)| {
+            let title = kind.title();
+
+            let width = (max(body.len(), title.len()) + 2) as u16;
+
+            let left_side_height = dest_ports.get(&index).map(|c|c.len()).unwrap_or(0);
+            let right_side_height = source_ports.get(&index).map(|c|c.len()).unwrap_or(0);
+
+            let height =
+            2 + max(left_side_height, right_side_height) as u16;
+
+            CollectedNode {
+                width,
+                height,
+                title,
+                body,
+            }})
         .collect();
 
     Ok((nodes, links))
