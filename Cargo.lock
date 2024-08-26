@@ -1367,6 +1367,7 @@ name = "so-sysinfo"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "clap",
  "human_bytes",
  "lazy_static",
  "libmacchina",

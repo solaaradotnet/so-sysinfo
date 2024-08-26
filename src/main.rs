@@ -1,4 +1,5 @@
 use anyhow::{Error, Result};
+use clap::Parser;
 use collection::collect;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
@@ -18,14 +19,16 @@ use tui_nodes::{NodeGraph, NodeLayout};
 
 mod collection;
 mod logos;
+mod args;
 
 fn main() -> Result<()> {
+    let args = args::Args::parse();
     stdout().execute(EnterAlternateScreen)?;
     enable_raw_mode()?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     terminal.clear()?;
 
-    let res = app(terminal);
+    let res = app(terminal, args);
 
     stdout().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
@@ -35,7 +38,9 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn app<T: Backend>(mut terminal: ratatui::Terminal<T>) -> Result<()> {
+fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Result<()> {
+    let mut args = args;
+
     let fg_color = Color::from_str("#FFF1A4")?;
 
     let hostname = collection::utils::get_hostname()?;

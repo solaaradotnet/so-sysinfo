@@ -1,4 +1,5 @@
 use anyhow::{Error, Result};
+use clap::ValueEnum;
 use ratatui::text::Text;
 use so_logo_ascii_generator::generate;
 use unicode_segmentation::UnicodeSegmentation;
@@ -42,6 +43,7 @@ fn test_get_graffiti() {
     assert_eq!(logo.2, 5);
 }
 
+#[derive(Debug, ValueEnum, Clone, Copy)]
 pub(crate) enum LogoKind {
     Shadow,
     Graffiti
