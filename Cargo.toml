@@ -6,18 +6,18 @@ authors = ["IAMSolaara"]
 license = "BSD-3-Clause"
 
 [dependencies]
-anyhow = "1.0.86"
+anyhow = "1.0"
 clap = { version = "4.5", features = ["derive"] }
-human_bytes = "0.4.3"
-lazy_static = "1.5.0"
-libmacchina = "7.3.0"
-os_info = "3.8.2"
-ratatui = "0.27.0"
-strum = "0.26.3"
-sysinfo = "0.31.2"
 chrono = "0.4"
+human_bytes = "0.4"
+lazy_static = "1.5"
+libmacchina = "7.3"
+os_info = "3.8"
+ratatui = "0.27"
+strum = "0.26"
+sysinfo = "0.31"
 tracing = "0.1"
-tui-nodes = "0.5.0"
+tui-nodes = "0.5"
 
 [profile.release]
 strip = true
