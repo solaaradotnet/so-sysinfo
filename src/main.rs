@@ -153,20 +153,19 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
                 );
                 let area = frame.size();
 
-                let app_area = area;
-                let main_layout = Layout::vertical([
+                let [header_area, body_area] = Layout::vertical([
                     Constraint::Length(app_state.logo_text_height as u16),
                     Constraint::Fill(1),
                 ])
-                .split(app_area);
+                .areas(area);
 
-                let logo_text_layout =
+                let [logo_area] =
                     Layout::horizontal([Constraint::Length(app_state.logo_text_width as u16)])
                         .flex(ratatui::layout::Flex::Center)
-                        .split(main_layout[0]);
+                        .areas(header_area);
 
-                frame.render_widget(Clear, logo_text_layout[0]);
-                frame.render_widget(&app_state.logo_text, logo_text_layout[0]);
+                frame.render_widget(Clear, logo_area);
+                frame.render_widget(&app_state.logo_text, logo_area);
                 trace!("logo drawn {:?}", frame_start.elapsed());
 
                 let window_widget = Block::new()
@@ -183,17 +182,17 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
                             .italic()
                             .dim(),
                     );
-                frame.render_widget(&window_widget, main_layout[1]);
+                frame.render_widget(&window_widget, body_area);
 
                 trace!("window frame drawn {:?}", frame_start.elapsed());
 
-                let window_inner_area = window_widget.inner(main_layout[1]);
+                let body_area = window_widget.inner(body_area);
 
                 let mut system_info_nodes_graph = NodeGraph::new(
                     graph_nodes,
                     links.to_vec(),
-                    window_inner_area.width.into(),
-                    window_inner_area.height.into(),
+                    body_area.width.into(),
+                    body_area.height.into(),
                 );
 
                 trace!("node graph created {:?}", frame_start.elapsed());
@@ -218,11 +217,11 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
                         Paragraph::new("Window too small. Resize it to show system graph.")
                             .red()
                             .centered(),
-                        window_inner_area,
+                        body_area,
                     );
                 } else {
                     trace!("window good {:?}", frame_start.elapsed());
-                    let zones = system_info_nodes_graph.split(window_inner_area);
+                    let zones = system_info_nodes_graph.split(body_area);
                     trace!("zones obtained {:?}", frame_start.elapsed());
                     for (idx, ea_zone) in zones.into_iter().enumerate() {
                         frame.render_widget(
@@ -231,11 +230,7 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
                         );
                         trace!("zone {idx} drawn {:?}", frame_start.elapsed());
                     }
-                    frame.render_stateful_widget(
-                        system_info_nodes_graph,
-                        window_inner_area,
-                        &mut (),
-                    );
+                    frame.render_stateful_widget(system_info_nodes_graph, body_area, &mut ());
                     trace!("node graph widget drawn {:?}", frame_start.elapsed());
                 }
 
