@@ -99,7 +99,7 @@ impl<'a> AppState<'a> {
     }
 
     fn generate_logo_data(logo_kind: logos::LogoKind) -> (String, usize, usize) {
-        logos::get(logo_kind).unwrap()
+        logo_kind.get_rendered()
     }
 
     fn cycle_next_logo(&mut self) {

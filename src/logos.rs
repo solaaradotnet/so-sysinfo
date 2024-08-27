@@ -1,40 +1,64 @@
-use anyhow::{Error, Result};
+use chrono::Local;
 use clap::ValueEnum;
-use so_logo_ascii_generator::generate;
-use unicode_segmentation::UnicodeSegmentation;
 
-static GRAFFITI_LOGO: &str = "
+fn make_graffiti_logo() -> (String, usize, usize) {
+    let cr_year = Local::now().format("%Y");
+    (
+        format!(
+            "
 .▄▄ ·           .▄▄ ·  ▄· ▄▌.▄▄ · ▪   ▐ ▄ ·▄▄▄
 ▐█ ▀. ▪         ▐█ ▀. ▐█▪██▌▐█ ▀. ██ •█▌▐█▐▄▄·▪
 ▄▀▀▀█▄ ▄█▀▄     ▄▀▀▀█▄▐█▌▐█▪▄▀▀▀█▄▐█·▐█▐▐▌██▪  ▄█▀▄
 ▐█▄▪▐█▐█▌.▐▌    ▐█▄▪▐█ ▐█▀·.▐█▄▪▐█▐█▌██▐█▌██▌.▐█▌.▐▌
  ▀▀▀▀  ▀█▄▀▪     ▀▀▀▀   ▀ •  ▀▀▀▀ ▀▀▀▀▀ █▪▀▀▀  ▀█▄▀▪
-
-";
-
-pub(crate) fn get(which: LogoKind) -> Result<(String, usize, usize)> {
-    let logo_text = match which {
-        LogoKind::Shadow => generate(
-            "so-sysinfo",
-            true,
-            so_logo_ascii_generator::TextFont::Shadow,
-        )?,
-        LogoKind::Graffiti => GRAFFITI_LOGO.to_owned(),
-    };
-    let logo_text_height = logo_text.lines().count();
-    let logo_text_width = logo_text
-        .lines()
-        .map(|l| l.graphemes(true).count())
-        .max()
-        .ok_or(Error::msg("uhhh"))?;
-
-    Ok((logo_text, logo_text_width, logo_text_height))
+                          (C) Solaara's Network {cr_year:0>4}
+"
+        ),
+        53,
+        8,
+    )
+}
+fn make_shadow_logo() -> (String, usize, usize) {
+    let cr_year = Local::now().format("%Y");
+    (
+        format!(
+            "
+                 =@-
+     =%.         *@:          .
+     .%@=        %@.        .=@#
+       =@%.    ..-=.      .*@@:
+        .#=.-@@%##%@@=. .#@%:
+         .*@=.       =@#.=.
+        .@*            +@:
+==--:.. *#.             ##
+++*#%@* @=              .@.
+        +@.       
+         +@-                                              _)          _|        
+      .+%::#@+.      __|   _ \\           __|  |   |   __|  |  __ \\   |     _ \\  
+    .*@@-   .:+%@. \\__ \\  (   | _____| \\__ \\  |   | \\__ \\  |  |   |  __|  (   | 
+   .*%:        ##. ____/ \\___/         ____/ \\__, | ____/ _| _|  _| _|   \\___/  
+              .@@.                           ____/                              
+              :@%                                     (C) Solaara's Network {cr_year:0>4} 
+"
+        ),
+        81,
+        18,
+    )
 }
 
 #[derive(Debug, ValueEnum, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LogoKind {
     Shadow,
     Graffiti,
+}
+
+impl LogoKind {
+    pub fn get_rendered(&self) -> (String, usize, usize) {
+        match self {
+            LogoKind::Shadow => make_shadow_logo(),
+            LogoKind::Graffiti => make_graffiti_logo(),
+        }
+    }
 }
 
 impl std::fmt::Display for LogoKind {
