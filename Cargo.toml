@@ -16,6 +16,7 @@ ratatui = "0.27.0"
 so-logo-ascii-generator = { git = "https://github.com/solaaradotnet/so-logo-ascii-generator", rev = "391d354" }
 strum = "0.26.3"
 sysinfo = "0.31.2"
+tracing = "0.1"
 tui-nodes = "0.5.0"
 unicode-segmentation = "1.11.0"
 

@@ -16,6 +16,7 @@ use ratatui::{
     Terminal,
 };
 use std::{io::stdout, panic::AssertUnwindSafe, rc::Rc, time::Instant};
+use tracing::{debug, trace};
 use tui_nodes::{NodeGraph, NodeLayout};
 
 mod args;
@@ -24,6 +25,8 @@ mod logos;
 
 fn main() -> Result<()> {
     let args = args::Args::parse();
+    debug!("Got args {args:?}");
+
     stdout().execute(EnterAlternateScreen)?;
     enable_raw_mode()?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
@@ -131,81 +134,121 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
     let nodes = Rc::new(nodes);
     let links = Rc::new(links);
 
+    let mut needs_to_redraw = true;
+
     loop {
-        let graph_nodes = nodes
-            .iter()
-            .map(|node| NodeLayout::new((node.width, node.height)).with_title(node.title))
-            .collect();
+        let frame_start = Instant::now();
+        if needs_to_redraw {
+            let graph_nodes = nodes
+                .iter()
+                .map(|node| NodeLayout::new((node.width, node.height)).with_title(node.title))
+                .collect();
 
-        terminal.draw(|frame| {
-            let area = frame.size();
+            trace!("copied graph nodes {:?}", frame_start.elapsed());
 
-            let app_area = area;
-            let main_layout = Layout::vertical([
-                Constraint::Length(app_state.logo_text_height as u16),
-                Constraint::Fill(1),
-            ])
-            .split(app_area);
-
-            let logo_text_layout =
-                Layout::horizontal([Constraint::Length(app_state.logo_text_width as u16)])
-                    .flex(ratatui::layout::Flex::Center)
-                    .split(main_layout[0]);
-
-            frame.render_widget(Clear, logo_text_layout[0]);
-            frame.render_widget(&app_state.logo_text, logo_text_layout[0]);
-
-            let window_widget = Block::new()
-                .border_type(ratatui::widgets::BorderType::Rounded)
-                .border_style(Style::new().fg(Color::from(app_state.fg_color)))
-                .borders(Borders::ALL)
-                .title(
-                    Title::from(" ".to_owned() + hostname.as_ref() + " ")
-                        .alignment(ratatui::layout::Alignment::Center),
-                )
-                .title_bottom(
-                    Line::from(bottom_text.clone())
-                        .right_aligned()
-                        .italic()
-                        .dim(),
+            terminal.draw(|frame| {
+                trace!(
+                    "------------------------ frame draw started {:?}",
+                    frame_start.elapsed()
                 );
-            frame.render_widget(&window_widget, main_layout[1]);
-            let window_inner_area = window_widget.inner(main_layout[1]);
+                let area = frame.size();
 
-            let mut system_info_nodes_graph = NodeGraph::new(
-                graph_nodes,
-                links.to_vec(),
-                window_inner_area.width.into(),
-                window_inner_area.height.into(),
-            );
+                let app_area = area;
+                let main_layout = Layout::vertical([
+                    Constraint::Length(app_state.logo_text_height as u16),
+                    Constraint::Fill(1),
+                ])
+                .split(app_area);
 
-            // TODO: do this better... please...
-            // horrid panic suppression code...
-            std::panic::set_hook(Box::new(|_| {}));
-            let test = std::panic::catch_unwind(AssertUnwindSafe(|| {
-                system_info_nodes_graph.calculate();
-            }));
-            let _ = std::panic::take_hook();
-            // horridness over!
+                let logo_text_layout =
+                    Layout::horizontal([Constraint::Length(app_state.logo_text_width as u16)])
+                        .flex(ratatui::layout::Flex::Center)
+                        .split(main_layout[0]);
 
-            if test.is_err() {
-                frame.render_widget(
-                    Paragraph::new("Window too small. Resize it to show system graph.")
-                        .red()
-                        .centered(),
-                    window_inner_area,
+                frame.render_widget(Clear, logo_text_layout[0]);
+                frame.render_widget(&app_state.logo_text, logo_text_layout[0]);
+                trace!("logo drawn {:?}", frame_start.elapsed());
+
+                let window_widget = Block::new()
+                    .border_type(ratatui::widgets::BorderType::Rounded)
+                    .border_style(Style::new().fg(Color::from(app_state.fg_color)))
+                    .borders(Borders::ALL)
+                    .title(
+                        Title::from(" ".to_owned() + hostname.as_ref() + " ")
+                            .alignment(ratatui::layout::Alignment::Center),
+                    )
+                    .title_bottom(
+                        Line::from(bottom_text.clone())
+                            .right_aligned()
+                            .italic()
+                            .dim(),
+                    );
+                frame.render_widget(&window_widget, main_layout[1]);
+
+                trace!("window frame drawn {:?}", frame_start.elapsed());
+
+                let window_inner_area = window_widget.inner(main_layout[1]);
+
+                let mut system_info_nodes_graph = NodeGraph::new(
+                    graph_nodes,
+                    links.to_vec(),
+                    window_inner_area.width.into(),
+                    window_inner_area.height.into(),
                 );
-            } else {
-                let zones = system_info_nodes_graph.split(window_inner_area);
-                for (idx, ea_zone) in zones.into_iter().enumerate() {
-                    frame
-                        .render_widget(Paragraph::new(nodes[idx].body.clone()).centered(), ea_zone);
+
+                trace!("node graph created {:?}", frame_start.elapsed());
+
+                // TODO: do this better... please...
+                // horrid panic suppression code...
+                std::panic::set_hook(Box::new(|_| {}));
+                trace!("noop panic hook set {:?}", frame_start.elapsed());
+                let test = std::panic::catch_unwind(AssertUnwindSafe(|| {
+                    trace!("node graph calculate(start) {:?}", frame_start.elapsed());
+                    system_info_nodes_graph.calculate();
+                    trace!("node graph calculate(done) {:?}", frame_start.elapsed());
+                }));
+                trace!("catch_unwind() {:?}", frame_start.elapsed());
+                let _ = std::panic::take_hook();
+                trace!("panic hook restored {:?}", frame_start.elapsed());
+                // horridness over!
+
+                if test.is_err() {
+                    trace!("window too small {:?}", frame_start.elapsed());
+                    frame.render_widget(
+                        Paragraph::new("Window too small. Resize it to show system graph.")
+                            .red()
+                            .centered(),
+                        window_inner_area,
+                    );
+                } else {
+                    trace!("window good {:?}", frame_start.elapsed());
+                    let zones = system_info_nodes_graph.split(window_inner_area);
+                    trace!("zones obtained {:?}", frame_start.elapsed());
+                    for (idx, ea_zone) in zones.into_iter().enumerate() {
+                        frame.render_widget(
+                            Paragraph::new(nodes[idx].body.clone()).centered(),
+                            ea_zone,
+                        );
+                        trace!("zone {idx} drawn {:?}", frame_start.elapsed());
+                    }
+                    frame.render_stateful_widget(
+                        system_info_nodes_graph,
+                        window_inner_area,
+                        &mut (),
+                    );
+                    trace!("node graph widget drawn {:?}", frame_start.elapsed());
                 }
-                frame.render_stateful_widget(system_info_nodes_graph, window_inner_area, &mut ());
-            }
-        })?;
 
+                needs_to_redraw = false;
+            })?;
+
+            trace!(
+                "------------------------ frame draw over {:?}",
+                frame_start.elapsed()
+            );
+        }
         if event::poll(std::time::Duration::from_millis(16))? {
+            trace!("polled for event {:?}", frame_start.elapsed());
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
                     match key.code {
@@ -216,6 +259,7 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
                     }
                 }
             }
+            needs_to_redraw = true;
         }
     }
 

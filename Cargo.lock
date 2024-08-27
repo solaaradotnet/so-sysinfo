@@ -1376,6 +1376,7 @@ dependencies = [
  "so-logo-ascii-generator",
  "strum",
  "sysinfo",
+ "tracing",
  "tui-nodes",
  "unicode-segmentation",
 ]

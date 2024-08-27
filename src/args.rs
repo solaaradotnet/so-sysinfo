@@ -2,7 +2,7 @@ use clap::Parser;
 
 use crate::logos::LogoKind;
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[command(version)]
 pub(crate) struct Args {
     #[arg(short, long = "logo", default_value = "shadow")]
