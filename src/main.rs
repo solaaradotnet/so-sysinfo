@@ -63,6 +63,7 @@ struct AppState<'a> {
     logo_text_width: usize,
     logo_text_height: usize,
     fg_color: FgColor,
+    pub needs_to_redraw: bool,
 }
 
 impl<'a> AppState<'a> {
@@ -76,6 +77,7 @@ impl<'a> AppState<'a> {
             logo_text_width,
             logo_text_height,
             fg_color,
+            needs_to_redraw: true,
         }
     }
     pub fn update_logo(&mut self, logo_kind: logos::LogoKind) {
@@ -134,11 +136,9 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
     let nodes = Rc::new(nodes);
     let links = Rc::new(links);
 
-    let mut needs_to_redraw = true;
-
     loop {
         let frame_start = Instant::now();
-        if needs_to_redraw {
+        if app_state.needs_to_redraw {
             let graph_nodes = nodes
                 .iter()
                 .map(|node| NodeLayout::new((node.width, node.height)).with_title(node.title))
@@ -234,7 +234,7 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
                     trace!("node graph widget drawn {:?}", frame_start.elapsed());
                 }
 
-                needs_to_redraw = false;
+                app_state.needs_to_redraw = false;
             })?;
 
             trace!(
@@ -254,7 +254,7 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
                     }
                 }
             }
-            needs_to_redraw = true;
+            app_state.needs_to_redraw = true;
         }
     }
 
