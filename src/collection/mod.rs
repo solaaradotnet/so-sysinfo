@@ -8,6 +8,8 @@ use utils::{
     get_cpu, get_de, get_model, get_os, get_shell, get_system_memory, get_terminal, get_wm,
 };
 
+use crate::args::VisualToggles;
+
 #[derive(strum::EnumIter, Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
 enum SystemComponentKind {
     Cpu,
@@ -57,7 +59,7 @@ impl SystemComponentKind {
             SystemComponentKind::WindowManager => "[ WM ]",
         }
     }
-    pub fn collect_info(&self) -> Result<Vec<String>> {
+    pub fn collect_info(&self, visual_toggles: &VisualToggles) -> Result<Vec<String>> {
         match self {
             SystemComponentKind::Cpu => Ok(vec![get_cpu()?]),
             SystemComponentKind::SystemMemory => Ok(vec![get_system_memory()]),
@@ -106,10 +108,12 @@ pub(crate) struct CollectedNode {
     pub body: String,
 }
 
-pub(crate) fn collect() -> Result<(Vec<CollectedNode>, Vec<Connection>)> {
+pub(crate) fn collect(
+    visual_toggles: VisualToggles,
+) -> Result<(Vec<CollectedNode>, Vec<Connection>)> {
     let partial_nodes: Vec<_> = SystemComponentKind::iter()
         .filter_map(|kind| {
-            if let Ok(info) = kind.collect_info() {
+            if let Ok(info) = kind.collect_info(&visual_toggles) {
                 return Some(info.into_iter().map(move |info| (kind, info)));
             };
             None

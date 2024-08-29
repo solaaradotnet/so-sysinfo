@@ -124,7 +124,7 @@ impl<'a> From<args::Args> for AppState<'a> {
 
 fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Result<()> {
     let now = Instant::now();
-    let (nodes, links) = collect()?;
+    let (nodes, links) = collect(args.visual_toggles)?;
     let elapsed = now.elapsed().as_millis();
 
     let bottom_text = format!(" took {elapsed}ms ");
