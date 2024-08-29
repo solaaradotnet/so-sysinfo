@@ -121,6 +121,7 @@ pub(crate) fn collect(
         .flatten()
         .enumerate()
         .map(|(idx, (kind, ele))| (idx, kind, ele))
+        .map(|(idx, kind, body)| (idx, kind, format!(" {body} ")))
         .collect();
 
     let mut source_ports: HashMap<usize, Vec<usize>> = HashMap::new();
