@@ -3,6 +3,8 @@ use libmacchina::{
     traits::GeneralReadout as _, traits::MemoryReadout as _, GeneralReadout, MemoryReadout,
 };
 
+use crate::args::VisualToggles;
+
 lazy_static::lazy_static! {
     static ref SYSINFO_DATA: sysinfo::System = sysinfo::System::new_all();
     static ref OS_INFO_DATA: os_info::Info = os_info::get();
@@ -83,7 +85,10 @@ pub(crate) fn get_wm() -> Result<String> {
         .map_err(|_| Error::msg("Failed to get window manager"))
 }
 
-pub(crate) fn get_terminal() -> Result<String> {
+pub(crate) fn get_terminal(visual_toggles: &VisualToggles) -> Result<String> {
+    if visual_toggles.hide_terminal_version {
+        std::env::remove_var("TERM_PROGRAM_VERSION")
+    }
     LIBMACCHINA_GENERAL_READOUT
         .terminal()
         .map_err(|_| Error::msg("Failed to get terminal application"))

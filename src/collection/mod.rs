@@ -65,7 +65,7 @@ impl SystemComponentKind {
             SystemComponentKind::SystemMemory => Ok(vec![get_system_memory()]),
             SystemComponentKind::BoardModel => Ok(vec![get_model()]),
             SystemComponentKind::CurrentShell => Ok(vec![get_shell()?]),
-            SystemComponentKind::TerminalEmulator => Ok(vec![get_terminal()?]),
+            SystemComponentKind::TerminalEmulator => Ok(vec![get_terminal(visual_toggles)?]),
             SystemComponentKind::DesktopEnvironment => Ok(vec![get_de()?]),
             SystemComponentKind::WindowManager => Ok(vec![get_wm()?]),
             SystemComponentKind::Gpu => Err(Error::msg("N/A")),
