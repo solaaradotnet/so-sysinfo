@@ -1,6 +1,6 @@
 [package]
 name = "so-sysinfo"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 authors = ["IAMSolaara"]
 license = "BSD-3-Clause"
@@ -13,11 +13,11 @@ human_bytes = "0.4"
 lazy_static = "1.5"
 libmacchina = "7.3"
 os_info = "3.8"
-ratatui = "0.27"
+ratatui = "0.28"
 strum = "0.26"
 sysinfo = "0.31"
 tracing = "0.1"
-tui-nodes = "0.5"
+tui-nodes = "0.6"
 
 [profile.release]
 strip = true

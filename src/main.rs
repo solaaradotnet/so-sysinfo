@@ -148,7 +148,7 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
                     "------------------------ frame draw started {:?}",
                     frame_start.elapsed()
                 );
-                let area = frame.size();
+                let area = frame.area();
 
                 let [header_area, body_area] = Layout::vertical([
                     Constraint::Length(app_state.logo_text_height as u16),
