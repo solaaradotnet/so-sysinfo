@@ -79,10 +79,33 @@ pub(crate) fn get_de() -> Result<String> {
         .map_err(|_| Error::msg("Failed to get desktop environment"))
 }
 
+#[cfg(not(target_os = "macos"))]
 pub(crate) fn get_wm() -> Result<String> {
     LIBMACCHINA_GENERAL_READOUT
         .window_manager()
         .map_err(|_| Error::msg("Failed to get window manager"))
+}
+#[cfg(target_os = "macos")]
+pub(crate) fn get_wm() -> Result<String> {
+    use std::ffi::OsStr;
+    for wm in [
+        "chunkwm",
+        "kwm",
+        "yabai",
+        "Amethyst",
+        "Spectacle",
+        "Rectangle",
+    ] {
+        if SYSINFO_DATA
+            .processes_by_exact_name(OsStr::new(wm))
+            .next()
+            .is_some()
+        {
+            return Ok(wm.to_string());
+        }
+    }
+
+    Ok("Quartz Compositor".to_string())
 }
 
 pub(crate) fn get_terminal(visual_toggles: &VisualToggles) -> Result<String> {
