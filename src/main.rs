@@ -6,7 +6,9 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
         event::{self, KeyCode, KeyEventKind},
-        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+        terminal::{
+            disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, SetTitle,
+        },
         ExecutableCommand,
     },
     layout::{Constraint, Layout},
@@ -27,6 +29,7 @@ fn main() -> Result<()> {
     let args = args::Args::parse();
     debug!("Got args {args:?}");
 
+    stdout().execute(SetTitle("so-sysinfo"))?;
     stdout().execute(EnterAlternateScreen)?;
     enable_raw_mode()?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
@@ -123,7 +126,6 @@ impl<'a> From<args::Args> for AppState<'a> {
 }
 
 fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Result<()> {
-    println!("\x1b]2;so-sysinfo\x07");
     let now = Instant::now();
     let (nodes, links) = collect(args.visual_toggles)?;
     let elapsed = now.elapsed().as_millis();
@@ -255,8 +257,6 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
             app_state.needs_to_redraw = true;
         }
     }
-
-    println!("\x1b]2;{}\x07", std::env::var("SHELL").unwrap_or_default());
 
     Ok(())
 }
