@@ -15,7 +15,7 @@ use ratatui::{
     widgets::{block::Title, Block, Borders, Clear, Paragraph},
     Terminal,
 };
-use std::{io::stdout, panic::AssertUnwindSafe, rc::Rc, time::Instant};
+use std::{io::stdout, panic::AssertUnwindSafe, time::Instant};
 use tracing::{debug, trace};
 use tui_nodes::{NodeGraph, NodeLayout};
 
@@ -133,8 +133,6 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
 
     let bottom_text = format!(" took {elapsed}ms ");
 
-    let nodes = Rc::new(nodes);
-    let links = Rc::new(links);
 
     loop {
         let frame_start = Instant::now();
