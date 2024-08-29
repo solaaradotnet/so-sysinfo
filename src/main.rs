@@ -123,16 +123,15 @@ impl<'a> From<args::Args> for AppState<'a> {
 }
 
 fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Result<()> {
-    let mut app_state = AppState::from(args);
-
-    let hostname = collection::utils::get_hostname()?;
-
     let now = Instant::now();
     let (nodes, links) = collect()?;
     let elapsed = now.elapsed().as_millis();
 
     let bottom_text = format!(" took {elapsed}ms ");
 
+    let mut app_state = AppState::from(args);
+
+    let hostname = collection::utils::get_hostname()?;
 
     loop {
         let frame_start = Instant::now();
