@@ -13,7 +13,7 @@ use ratatui::{
     },
     layout::{Constraint, Layout},
     style::{Color, Style, Stylize},
-    text::{Line, Text},
+    text::Text,
     widgets::{block::Title, Block, Borders, Clear, Paragraph},
     Terminal,
 };
@@ -130,7 +130,7 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
     let (nodes, links) = collect(args.visual_toggles)?;
     let elapsed = now.elapsed().as_millis();
 
-    let bottom_text = format!(" took {elapsed}ms ");
+    trace!("collection took {elapsed}ms");
 
     let mut app_state = AppState::from(args);
 
@@ -180,12 +180,6 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
                     .title(
                         Title::from(" ".to_owned() + hostname.as_ref() + " ")
                             .alignment(ratatui::layout::Alignment::Center),
-                    )
-                    .title_bottom(
-                        Line::from(bottom_text.clone())
-                            .right_aligned()
-                            .italic()
-                            .dim(),
                     );
                 frame.render_widget(&window_widget, body_area);
 
