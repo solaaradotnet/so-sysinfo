@@ -5,25 +5,22 @@ fn make_graffiti_logo() -> (String, usize, usize) {
     let cr_year = Local::now().format("%Y");
     (
         format!(
-            "
-.▄▄ ·           .▄▄ ·  ▄· ▄▌.▄▄ · ▪   ▐ ▄ ·▄▄▄
+            ".▄▄ ·           .▄▄ ·  ▄· ▄▌.▄▄ · ▪   ▐ ▄ ·▄▄▄
 ▐█ ▀. ▪         ▐█ ▀. ▐█▪██▌▐█ ▀. ██ •█▌▐█▐▄▄·▪
 ▄▀▀▀█▄ ▄█▀▄     ▄▀▀▀█▄▐█▌▐█▪▄▀▀▀█▄▐█·▐█▐▐▌██▪  ▄█▀▄
 ▐█▄▪▐█▐█▌.▐▌    ▐█▄▪▐█ ▐█▀·.▐█▄▪▐█▐█▌██▐█▌██▌.▐█▌.▐▌
  ▀▀▀▀  ▀█▄▀▪     ▀▀▀▀   ▀ •  ▀▀▀▀ ▀▀▀▀▀ █▪▀▀▀  ▀█▄▀▪
-                          (C) Solaara's Network {cr_year:0>4}
-"
+                          (C) Solaara's Network {cr_year:0>4}"
         ),
         53,
-        8,
+        6,
     )
 }
 fn make_shadow_logo() -> (String, usize, usize) {
     let cr_year = Local::now().format("%Y");
     (
         format!(
-            "
-                 =@-
+            "                 =@-
      =%.         *@:          .
      .%@=        %@.        .=@#
        =@%.    ..-=.      .*@@:
@@ -38,11 +35,10 @@ fn make_shadow_logo() -> (String, usize, usize) {
     .*@@-   .:+%@. \\__ \\  (   | _____| \\__ \\  |   | \\__ \\  |  |   |  __|  (   | 
    .*%:        ##. ____/ \\___/         ____/ \\__, | ____/ _| _|  _| _|   \\___/  
               .@@.                           ____/                              
-              :@%                                     (C) Solaara's Network {cr_year:0>4} 
-"
+              :@%                                     (C) Solaara's Network {cr_year:0>4} "
         ),
         81,
-        18,
+        16,
     )
 }
 

@@ -12,6 +12,7 @@ use ratatui::{
         ExecutableCommand,
     },
     layout::{Constraint, Layout},
+    prelude::Margin,
     style::{Color, Style, Stylize},
     text::Text,
     widgets::{block::Title, Block, Borders, Clear, Paragraph},
@@ -149,6 +150,11 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
                 })
                 .collect();
 
+            let connections = links
+                .iter()
+                .map(|node| node.with_line_style(Style::new().fg(app_state.fg_color.into())))
+                .collect();
+
             trace!("copied graph nodes {:?}", frame_start.elapsed());
 
             terminal.draw(|frame| {
@@ -156,7 +162,7 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
                     "------------------------ frame draw started {:?}",
                     frame_start.elapsed()
                 );
-                let area = frame.area();
+                let area = frame.area().inner(Margin::new(1, 0));
 
                 let [header_area, body_area] = Layout::vertical([
                     Constraint::Length(app_state.logo_text_height as u16),
@@ -175,21 +181,20 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
 
                 let window_widget = Block::new()
                     .border_type(ratatui::widgets::BorderType::Rounded)
-                    .border_style(Style::new().fg(Color::from(app_state.fg_color)))
-                    .borders(Borders::ALL)
+                    .border_style(Style::new().fg(app_state.fg_color.into()))
+                    .borders(Borders::TOP)
                     .title(
                         Title::from(" ".to_owned() + hostname.as_ref() + " ")
                             .alignment(ratatui::layout::Alignment::Center),
                     );
                 frame.render_widget(&window_widget, body_area);
-
                 trace!("window frame drawn {:?}", frame_start.elapsed());
 
-                let body_area = window_widget.inner(body_area);
+                let body_area = window_widget.inner(body_area).inner(Margin::new(0, 1));
 
                 let mut system_info_nodes_graph = NodeGraph::new(
                     graph_nodes,
-                    links.to_vec(),
+                    connections,
                     body_area.width.into(),
                     body_area.height.into(),
                 );
