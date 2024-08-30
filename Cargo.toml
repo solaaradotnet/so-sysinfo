@@ -17,7 +17,7 @@ ratatui = "0.28"
 strum = "0.26"
 sysinfo = "0.31"
 tracing = "0.1"
-tui-nodes = "0.6"
+tui-nodes = { git = "https://git.sr.ht/~iamsolaara/tui-nodes", branch = "main" }
 
 [profile.release]
 strip = true
