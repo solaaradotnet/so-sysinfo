@@ -141,7 +141,12 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
         if app_state.needs_to_redraw {
             let graph_nodes = nodes
                 .iter()
-                .map(|node| NodeLayout::new((node.width, node.height)).with_title(node.title))
+                .map(|node| {
+                    NodeLayout::new((node.width, node.height))
+                        .with_title(node.title)
+                        .with_border_style(Style::new().fg(app_state.fg_color.into()))
+                        .with_border_type(ratatui::widgets::BorderType::Rounded)
+                })
                 .collect();
 
             trace!("copied graph nodes {:?}", frame_start.elapsed());
@@ -225,7 +230,9 @@ fn app<T: Backend>(mut terminal: ratatui::Terminal<T>, args: args::Args) -> Resu
                     trace!("zones obtained {:?}", frame_start.elapsed());
                     for (idx, ea_zone) in zones.into_iter().enumerate() {
                         frame.render_widget(
-                            Paragraph::new(nodes[idx].body.clone()).centered(),
+                            Paragraph::new(nodes[idx].body.clone())
+                                .centered()
+                                .fg(app_state.fg_color),
                             ea_zone,
                         );
                         trace!("zone {idx} drawn {:?}", frame_start.elapsed());
