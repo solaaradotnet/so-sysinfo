@@ -112,18 +112,28 @@ pub(crate) fn get_shell() -> Result<String> {
     Ok(shell.to_string())
 }
 
+#[cfg(not(target_os = "windows"))]
 pub(crate) fn get_de() -> Result<String> {
     LIBMACCHINA_GENERAL_READOUT
         .desktop_environment()
         .map_err(|_| Error::msg("Failed to get desktop environment"))
 }
 
+#[cfg(target_os = "windows")]
+pub(crate) fn get_de() -> Result<String> {
+    // windows get_de() stub...
+    // TODO: do this better
+    Ok("Aero".to_string())
+}
+
 #[cfg(not(target_os = "macos"))]
+#[cfg(not(target_os = "windows"))]
 pub(crate) fn get_wm() -> Result<String> {
     LIBMACCHINA_GENERAL_READOUT
         .window_manager()
         .map_err(|_| Error::msg("Failed to get window manager"))
 }
+
 #[cfg(target_os = "macos")]
 pub(crate) fn get_wm() -> Result<String> {
     use std::ffi::OsStr;
@@ -145,6 +155,12 @@ pub(crate) fn get_wm() -> Result<String> {
     }
 
     Ok("Quartz Compositor".to_string())
+}
+#[cfg(target_os = "windows")]
+pub(crate) fn get_wm() -> Result<String> {
+    // windows get_wm() stub...
+    // TODO: do this better
+    Ok("dwm".to_string())
 }
 
 pub(crate) fn get_terminal(visual_toggles: &VisualToggles) -> Result<String> {
