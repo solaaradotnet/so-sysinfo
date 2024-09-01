@@ -13,9 +13,9 @@ lazy_static::lazy_static! {
 }
 
 pub(crate) fn get_cpu() -> Result<String> {
-    let cores = LIBMACCHINA_GENERAL_READOUT
-        .cpu_cores()
-        .map_err(|_| Error::msg("Failed to get CPU core count."))?;
+    // TODO: switch back to using libmacchina for this when the windows PRs get merged
+    //       (PR url: https://github.com/Macchina-CLI/libmacchina/pull/145)
+    let cores = num_cpus::get();
 
     let cpu_model = LIBMACCHINA_GENERAL_READOUT
         .cpu_model_name()

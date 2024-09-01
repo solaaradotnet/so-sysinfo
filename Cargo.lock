@@ -1298,6 +1298,7 @@ dependencies = [
  "human_bytes",
  "lazy_static",
  "libmacchina",
+ "num_cpus",
  "os_info",
  "ratatui",
  "strum",
