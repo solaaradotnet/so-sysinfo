@@ -126,11 +126,12 @@ pub(crate) fn get_hostname() -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use testresult::TestResult;
 
     #[test]
-    fn test_get_cpu() {
-        let info = get_cpu();
-        assert!(info.is_ok())
+    fn test_get_cpu() -> TestResult {
+        let _ = get_cpu()?;
+        Ok(())
     }
 
     #[test]
