@@ -163,6 +163,7 @@ pub(crate) fn get_wm() -> Result<String> {
     Ok("dwm".to_string())
 }
 
+#[cfg(not(target_os = "windows"))]
 pub(crate) fn get_terminal(visual_toggles: &VisualToggles) -> Result<String> {
     if visual_toggles.hide_terminal_version {
         std::env::remove_var("TERM_PROGRAM_VERSION")
@@ -170,6 +171,13 @@ pub(crate) fn get_terminal(visual_toggles: &VisualToggles) -> Result<String> {
     LIBMACCHINA_GENERAL_READOUT
         .terminal()
         .map_err(|_| Error::msg("Failed to get terminal application"))
+}
+
+#[cfg(target_os = "windows")]
+pub(crate) fn get_terminal(_: &VisualToggles) -> Result<String> {
+    // windows get_terminal() stub...
+    // TODO: do this better
+    Ok("Unknown".to_string())
 }
 
 pub(crate) fn get_hostname() -> Result<String> {
