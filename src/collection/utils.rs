@@ -75,8 +75,34 @@ pub(crate) fn get_shell() -> Result<String> {
     debug!("shell (pass 1): {shell}");
     let shell = shell.strip_suffix(".exe").unwrap_or(&shell); // windows bad
     debug!("shell (pass 2): {shell}");
-    let shell = shell.strip_prefix('-').unwrap_or(shell); // login shells
+    let mut shell = shell.strip_prefix('-').unwrap_or(shell).to_string(); // login shells
     debug!("shell (pass 3): {shell}");
+
+    // recursively get parent shell process if needed
+    while matches!(shell.as_ref(), "cargo") {
+        let parent_pid = parent_process
+            .parent()
+            .ok_or(Error::msg("Failed to get parent process."))?;
+        debug!("parent_pid: {parent_pid}");
+        let parent_process = SYSINFO_DATA
+            .process(parent_pid)
+            .expect("Process with parent pid does not exist");
+        debug!("parent_process: {parent_process:?}");
+
+        let deeper_shell = parent_process
+            .name()
+            .to_string_lossy()
+            .trim()
+            .to_lowercase();
+        debug!("shell (pass 1): {shell}");
+        let deeper_shell = deeper_shell.strip_suffix(".exe").unwrap_or(&deeper_shell); // windows bad
+        debug!("shell (pass 2): {shell}");
+        shell = deeper_shell
+            .strip_prefix('-')
+            .unwrap_or(deeper_shell)
+            .to_string(); // login shells
+        debug!("shell (pass 3): {shell}");
+    }
 
     Ok(shell.to_string())
 }
