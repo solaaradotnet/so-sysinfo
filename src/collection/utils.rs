@@ -122,3 +122,41 @@ pub(crate) fn get_hostname() -> Result<String> {
         .hostname()
         .map_err(|_| Error::msg("Failed to get hostname."))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_cpu() {
+        let info = get_cpu();
+        assert!(info.is_ok())
+    }
+
+    #[test]
+    fn test_get_system_memory() {
+        let info = get_system_memory();
+        assert!(!info.is_empty())
+    }
+
+    #[test]
+    fn test_get_os() {}
+
+    #[test]
+    fn test_get_model() {}
+
+    #[test]
+    fn test_get_shell() {}
+
+    #[test]
+    fn test_get_de() {}
+
+    #[test]
+    fn test_get_wm() {}
+
+    #[test]
+    fn test_get_terminal() {}
+
+    #[test]
+    fn test_get_hostname() {}
+}
