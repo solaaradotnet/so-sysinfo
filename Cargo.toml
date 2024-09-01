@@ -22,6 +22,7 @@ tui-nodes = { git = "https://git.sr.ht/~iamsolaara/tui-nodes", branch = "main" }
 
 [dev-dependencies]
 testresult = "0.4"
+tracing-test = "0.2"
 
 [profile.release]
 strip = true

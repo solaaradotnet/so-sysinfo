@@ -2,6 +2,7 @@ use anyhow::{Error, Result};
 use libmacchina::{
     traits::GeneralReadout as _, traits::MemoryReadout as _, GeneralReadout, MemoryReadout,
 };
+use tracing::debug;
 
 use crate::args::VisualToggles;
 
@@ -51,24 +52,31 @@ pub(crate) fn get_model() -> String {
 pub(crate) fn get_shell() -> Result<String> {
     let current_pid =
         sysinfo::get_current_pid().map_err(|_| Error::msg("Failed to get current PID."))?;
+    debug!("current_pid: {current_pid}");
     let current_process = SYSINFO_DATA
         .process(current_pid)
         .ok_or(Error::msg("Process with current pid does not exist"))?;
+    debug!("current_process: {current_process:?}");
 
     let parent_pid = current_process
         .parent()
         .ok_or(Error::msg("Failed to get parent process."))?;
+    debug!("parent_pid: {parent_pid}");
     let parent_process = SYSINFO_DATA
         .process(parent_pid)
         .expect("Process with parent pid does not exist");
+    debug!("parent_process: {parent_process:?}");
 
     let shell = parent_process
         .name()
         .to_string_lossy()
         .trim()
         .to_lowercase();
+    debug!("shell (pass 1): {shell}");
     let shell = shell.strip_suffix(".exe").unwrap_or(&shell); // windows bad
+    debug!("shell (pass 2): {shell}");
     let shell = shell.strip_prefix('-').unwrap_or(shell); // login shells
+    debug!("shell (pass 3): {shell}");
 
     Ok(shell.to_string())
 }
@@ -127,6 +135,8 @@ pub(crate) fn get_hostname() -> Result<String> {
 mod tests {
     use super::*;
     use testresult::TestResult;
+    use tracing::Level;
+    use tracing_test::traced_test;
 
     #[test]
     fn test_get_cpu() -> TestResult {
@@ -152,6 +162,7 @@ mod tests {
         assert!(!info.is_empty())
     }
 
+    #[traced_test]
     #[test]
     fn test_get_shell() -> TestResult {
         let _ = get_shell()?;
