@@ -141,23 +141,56 @@ mod tests {
     }
 
     #[test]
-    fn test_get_os() {}
+    fn test_get_os() -> TestResult {
+        let _ = get_os()?;
+        Ok(())
+    }
 
     #[test]
-    fn test_get_model() {}
+    fn test_get_model() {
+        let info = get_model();
+        assert!(!info.is_empty())
+    }
 
     #[test]
-    fn test_get_shell() {}
+    fn test_get_shell() -> TestResult {
+        let _ = get_shell()?;
+        Ok(())
+    }
 
     #[test]
-    fn test_get_de() {}
+    fn test_get_de() -> TestResult {
+        let _ = get_de()?;
+        Ok(())
+    }
 
     #[test]
-    fn test_get_wm() {}
+    fn test_get_wm() -> TestResult {
+        let _ = get_wm()?;
+        Ok(())
+    }
 
     #[test]
-    fn test_get_terminal() {}
+    fn test_get_terminal_with_version() -> TestResult {
+        let _ = get_terminal(&VisualToggles {
+            hide_terminal_version: true,
+        })?;
+
+        Ok(())
+    }
 
     #[test]
-    fn test_get_hostname() {}
+    fn test_get_terminal_without_version() -> TestResult {
+        let _ = get_terminal(&VisualToggles {
+            hide_terminal_version: false,
+        })?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_get_hostname() -> TestResult {
+        let _ = get_hostname()?;
+        Ok(())
+    }
 }
