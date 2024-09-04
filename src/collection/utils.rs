@@ -190,7 +190,6 @@ pub(crate) fn get_hostname() -> Result<String> {
 mod tests {
     use super::*;
     use testresult::TestResult;
-    use tracing::Level;
     use tracing_test::traced_test;
 
     #[test]
