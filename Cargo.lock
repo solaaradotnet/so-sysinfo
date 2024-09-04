@@ -1596,12 +1596,11 @@ dependencies = [
 
 [[package]]
 name = "tui-nodes"
-version = "0.6.0"
-source = "git+https://git.sr.ht/~iamsolaara/tui-nodes?branch=main#c5983ed3656f1142d72c9729aef055f72756f2e3"
+version = "0.7.0"
 dependencies = [
- "log",
  "ratatui",
  "sorted-vec",
+ "thiserror",
 ]
 
 [[package]]
