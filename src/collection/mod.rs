@@ -1,15 +1,15 @@
-use anyhow::{Error, Result};
+use anyhow::Result;
 use std::{cmp::max, collections::HashMap, fmt::Display};
 use strum::IntoEnumIterator;
 use tui_nodes::Connection;
 
-pub(crate) mod system_components;
-pub(crate) mod utils;
-use utils::{
-    get_cpu, get_de, get_model, get_os, get_shell, get_system_memory, get_terminal, get_wm,
-};
-
 use crate::args::VisualToggles;
+
+pub(crate) mod system_components;
+use system_components::{
+    BoardModel, Cpu, CurrentShell, DesktopEnvironment, Gpu, OperatingSystem, SystemComponent,
+    SystemMemory, TerminalEmulator, WindowManager,
+};
 
 #[derive(strum::EnumIter, Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
 enum SystemComponentKind {
@@ -60,17 +60,17 @@ impl SystemComponentKind {
             SystemComponentKind::WindowManager => "[ WM ]",
         }
     }
-    pub fn collect_info(&self, visual_toggles: &VisualToggles) -> Result<Vec<String>> {
+    pub fn collect_info(&self, vt: &VisualToggles) -> Result<Vec<String>> {
         match self {
-            SystemComponentKind::Cpu => Ok(vec![get_cpu()?]),
-            SystemComponentKind::SystemMemory => Ok(vec![get_system_memory()]),
-            SystemComponentKind::BoardModel => Ok(vec![get_model()]),
-            SystemComponentKind::CurrentShell => Ok(vec![get_shell()?]),
-            SystemComponentKind::TerminalEmulator => Ok(vec![get_terminal(visual_toggles)?]),
-            SystemComponentKind::DesktopEnvironment => Ok(vec![get_de()?]),
-            SystemComponentKind::WindowManager => Ok(vec![get_wm()?]),
-            SystemComponentKind::Gpu => Err(Error::msg("N/A")),
-            SystemComponentKind::OperatingSystem => Ok(vec![get_os()?]),
+            SystemComponentKind::Cpu => Cpu::collect_info(vt),
+            SystemComponentKind::SystemMemory => SystemMemory::collect_info(vt),
+            SystemComponentKind::BoardModel => BoardModel::collect_info(vt),
+            SystemComponentKind::CurrentShell => CurrentShell::collect_info(vt),
+            SystemComponentKind::TerminalEmulator => TerminalEmulator::collect_info(vt),
+            SystemComponentKind::DesktopEnvironment => DesktopEnvironment::collect_info(vt),
+            SystemComponentKind::WindowManager => WindowManager::collect_info(vt),
+            SystemComponentKind::OperatingSystem => OperatingSystem::collect_info(vt),
+            SystemComponentKind::Gpu => Gpu::collect_info(vt),
         }
     }
 

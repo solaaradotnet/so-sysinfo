@@ -15,7 +15,7 @@ pub(crate) struct Args {
     pub visual_toggles: VisualToggles,
 }
 
-#[derive(Clone, Debug, Copy, clap::Args)]
+#[derive(Clone, Debug, Copy, clap::Args, Default)]
 pub(crate) struct VisualToggles {
     #[arg(long)]
     pub hide_terminal_version: bool,
