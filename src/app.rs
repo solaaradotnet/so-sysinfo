@@ -24,8 +24,14 @@ struct AppState<'a> {
     pub needs_to_redraw: bool,
 }
 
+impl<'a> From<crate::args::Args> for AppState<'a> {
+    fn from(value: crate::args::Args) -> Self {
+        Self::new(value.logo_kind, value.fg_color.into())
+    }
+}
+
 impl<'a> AppState<'a> {
-    pub fn init(logo_kind: LogoKind, fg_color: Color) -> Self {
+    pub fn new(logo_kind: LogoKind, fg_color: Color) -> Self {
         let (logo_text, logo_text_width, logo_text_height) = Self::generate_logo_data(logo_kind);
         let logo_text = ratatui::text::Text::from(logo_text);
 
@@ -70,12 +76,6 @@ impl<'a> AppState<'a> {
             Color::LightMagenta => self.update_fg_color(Color::Rgb(255, 241, 164)),
             _ => unreachable!("This color shouldn't be used."),
         }
-    }
-}
-
-impl<'a> From<crate::args::Args> for AppState<'a> {
-    fn from(value: crate::args::Args) -> Self {
-        Self::init(value.logo_kind, value.fg_color.into())
     }
 }
 
