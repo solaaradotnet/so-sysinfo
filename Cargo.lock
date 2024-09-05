@@ -1342,7 +1342,6 @@ name = "so-sysinfo"
 version = "0.8.0"
 dependencies = [
  "anyhow",
- "cfg-if 1.0.0",
  "chrono",
  "clap",
  "human_bytes",

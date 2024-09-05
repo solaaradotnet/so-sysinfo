@@ -1,9 +1,14 @@
 use anyhow::Error;
-use cfg_if::cfg_if;
 use libmacchina::{traits::GeneralReadout as _, traits::MemoryReadout as _};
 use tracing::debug;
 
 use crate::args::VisualToggles;
+
+#[cfg(target_os = "macos")]
+mod impl_macos;
+
+#[cfg(target_os = "windows")]
+mod impl_windows;
 
 lazy_static::lazy_static! {
     static ref SYSINFO_DATA: sysinfo::System = sysinfo::System::new_all();
@@ -40,6 +45,7 @@ impl SystemComponent for Cpu {
         Ok(vec![format!("{cores}x {cpu_model}")])
     }
 }
+
 impl SystemComponent for SystemMemory {
     fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
         let total_memory_in_kb = LIBMACCHINA_MEMORY_READOUT.total().unwrap();
@@ -48,11 +54,13 @@ impl SystemComponent for SystemMemory {
         )])
     }
 }
+
 impl SystemComponent for Gpu {
     fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
         Err(Error::msg("unimplemented"))
     }
 }
+
 impl SystemComponent for BoardModel {
     fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
         Ok(vec![LIBMACCHINA_GENERAL_READOUT
@@ -60,6 +68,7 @@ impl SystemComponent for BoardModel {
             .unwrap_or("Generic".to_string())])
     }
 }
+
 impl SystemComponent for OperatingSystem {
     fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
         let os_name = LIBMACCHINA_GENERAL_READOUT
@@ -74,6 +83,7 @@ impl SystemComponent for OperatingSystem {
         Ok(vec![format!("{os_name}{arch}")])
     }
 }
+
 impl SystemComponent for CurrentShell {
     fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
         let current_pid =
@@ -138,83 +148,37 @@ impl SystemComponent for CurrentShell {
         Ok(vec![shell.to_string()])
     }
 }
+
+#[cfg(not(target_os = "windows"))]
 impl SystemComponent for TerminalEmulator {
-    cfg_if! {
-        if #[cfg(target_os = "windows")] {
-            fn collect_info(visual_toggles: &VisualToggles) -> Result<Vec<String>, Error> {
-                // windows get_terminal() stub...
-                // TODO: do this better
-                Ok(vec!["Unknown".to_string()])
-            }
-        } else {
-            fn collect_info(visual_toggles: &VisualToggles) -> Result<Vec<String>, Error> {
-                if visual_toggles.hide_terminal_version {
-                    std::env::remove_var("TERM_PROGRAM_VERSION")
-                }
-                Ok(vec![LIBMACCHINA_GENERAL_READOUT.terminal().map_err(
-                    |_| Error::msg("Failed to get terminal application"),
-                )?])
-            }
-
+    fn collect_info(visual_toggles: &VisualToggles) -> Result<Vec<String>, Error> {
+        if visual_toggles.hide_terminal_version {
+            std::env::remove_var("TERM_PROGRAM_VERSION")
         }
+        Ok(vec![LIBMACCHINA_GENERAL_READOUT.terminal().map_err(
+            |_| Error::msg("Failed to get terminal application"),
+        )?])
     }
 }
+
+#[cfg(not(target_os = "windows"))]
+#[cfg(not(target_os = "macos"))]
 impl SystemComponent for WindowManager {
-    cfg_if! {
-        if #[cfg(target_os = "macos")] {
-            fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
-                use std::ffi::OsStr;
-                for wm in [
-                    "chunkwm",
-                    "kwm",
-                    "yabai",
-                    "Amethyst",
-                    "Spectacle",
-                    "Rectangle",
-                ] {
-                    if SYSINFO_DATA
-                        .processes_by_exact_name(OsStr::new(wm))
-                        .next()
-                        .is_some()
-                    {
-                        return Ok(vec![wm.to_string()]);
-                    }
-                }
-
-                Ok(vec!["Quartz Compositor".to_string()])
-            }
-        } else if #[cfg(target_os = "windows")] {
-            fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
-                // windows get_wm() stub...
-                // TODO: do this better
-                Ok(vec!["dwm".to_string()])
-            }
-        } else {
-            fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
-                Ok(vec![LIBMACCHINA_GENERAL_READOUT
-                    .window_manager()
-                    .map_err(|_| Error::msg("Failed to get window manager"))?])
-            }
-        }
+    fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
+        Ok(vec![LIBMACCHINA_GENERAL_READOUT
+            .window_manager()
+            .map_err(|_| Error::msg("Failed to get window manager"))?])
     }
 }
+
+#[cfg(not(target_os = "windows"))]
 impl SystemComponent for DesktopEnvironment {
-    cfg_if! {
-        if #[cfg(target_os = "windows")] {
-            fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
-                // windows get_de() stub...
-                // TODO: do this better
-                Ok(vec!["Aero".to_string()])
-            }
-        } else {
-            fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
-                Ok(vec![LIBMACCHINA_GENERAL_READOUT
-                    .desktop_environment()
-                    .map_err(|_| {
-                        Error::msg("Failed to get desktop environment")
-                    })?])
-            }
-        }
+    fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
+        Ok(vec![LIBMACCHINA_GENERAL_READOUT
+            .desktop_environment()
+            .map_err(|_| {
+                Error::msg("Failed to get desktop environment")
+            })?])
     }
 }
 
