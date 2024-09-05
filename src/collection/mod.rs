@@ -3,6 +3,7 @@ use std::{cmp::max, collections::HashMap, fmt::Display};
 use strum::IntoEnumIterator;
 use tui_nodes::Connection;
 
+pub(crate) mod system_components;
 pub(crate) mod utils;
 use utils::{
     get_cpu, get_de, get_model, get_os, get_shell, get_system_memory, get_terminal, get_wm,

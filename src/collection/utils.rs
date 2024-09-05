@@ -180,12 +180,6 @@ pub(crate) fn get_terminal(_: &VisualToggles) -> Result<String> {
     Ok("Unknown".to_string())
 }
 
-pub(crate) fn get_hostname() -> Result<String> {
-    LIBMACCHINA_GENERAL_READOUT
-        .hostname()
-        .map_err(|_| Error::msg("Failed to get hostname."))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -253,9 +247,4 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn test_get_hostname() -> TestResult {
-        let _ = get_hostname()?;
-        Ok(())
-    }
 }

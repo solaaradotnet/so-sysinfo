@@ -1,4 +1,5 @@
-use crate::collection::collect;
+use crate::collection::system_components::SystemComponent;
+use crate::collection::{collect, system_components::Hostname};
 use crate::logos::LogoKind;
 use anyhow::Result;
 use ratatui::{
@@ -86,11 +87,14 @@ pub(crate) fn app<T: Backend>(
     let (nodes, links) = collect(args.visual_toggles)?;
     let elapsed = now.elapsed().as_millis();
 
+    let hostname = Hostname::collect_info(&args.visual_toggles)?
+        .into_iter()
+        .next()
+        .unwrap();
+
     trace!("collection took {elapsed}ms");
 
     let mut app_state = AppState::from(args);
-
-    let hostname = crate::collection::utils::get_hostname()?;
 
     loop {
         let frame_start = Instant::now();
