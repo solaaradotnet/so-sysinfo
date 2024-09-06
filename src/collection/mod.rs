@@ -112,93 +112,100 @@ pub(crate) struct CollectedNode {
 pub(crate) fn collect(
     visual_toggles: VisualToggles,
 ) -> Result<(Vec<CollectedNode>, Vec<Connection>)> {
-    let partial_nodes: Vec<_> = SystemComponentKind::iter()
-        .filter_map(|kind| {
-            if let Ok(info) = kind.collect_info(&visual_toggles) {
-                return Some(info.into_iter().map(move |info| (kind, info)));
-            };
-            None
-        })
-        .flatten()
-        .enumerate()
-        .map(|(idx, (kind, ele))| (idx, kind, ele))
-        .map(|(idx, kind, body)| (idx, kind, format!(" {body} ")))
-        .collect();
+    type ComponentId = usize;
+    let mut component_id_acc: ComponentId = 0;
 
-    let mut source_ports: HashMap<usize, Vec<usize>> = HashMap::new();
-    let mut dest_ports: HashMap<usize, Vec<usize>> = HashMap::new();
+    let mut ports: HashMap<ComponentId, (usize, usize)> =
+        HashMap::with_capacity(SystemComponentKind::iter().len());
 
-    partial_nodes.iter().for_each(|(idx, kind, _)| {
-        let dest_ports = dest_ports.entry(*idx).or_default();
-        for dst in partial_nodes.iter() {
-            if dst.1.get_links().contains(kind) {
-                dest_ports.push(dst.0);
-                source_ports.entry(dst.0).or_default().push(*idx);
-            }
-        }
-    });
-
-    let source_ports: HashMap<_, _> = source_ports
-        .into_iter()
-        .map(|(k, v)| {
-            let stuff: Vec<_> = v.into_iter().enumerate().collect();
-            (k, stuff)
+    let components: Vec<_> = SystemComponentKind::iter()
+        .map(|k| (k, k.collect_info(&visual_toggles)))
+        .flat_map(|(kind, component_info_outer)| match component_info_outer {
+            Err(_) => vec![(0, kind, None)],
+            Ok(component_info) => component_info
+                .into_iter()
+                .map(|info_string| {
+                    let component_id = component_id_acc;
+                    component_id_acc += 1;
+                    ports.insert(component_id, (0, 0));
+                    (component_id, kind, Some(format!(" {info_string} ")))
+                })
+                .collect(),
         })
         .collect();
 
-    let dest_ports: HashMap<_, _> = dest_ports
-        .into_iter()
-        .map(|(k, v)| {
-            let stuff: Vec<_> = v.into_iter().enumerate().collect();
-            (k, stuff)
-        })
-        .collect();
-
-    let links = dest_ports
+    let links: Vec<_> = components
         .iter()
-        .flat_map(|(dst_idx, links_to_me)| {
-            // (from_node, from_port, to_node, to_port)
-            let test: Vec<_> = links_to_me
+        .flat_map(|(idx, kind, _info)| {
+            components
                 .iter()
-                .map(|(dst_port, src_idx)| {
-                    let src_ports = &source_ports[&src_idx];
-                    let me = src_ports
-                        .iter()
-                        .find(|src_port| src_port.1 == *dst_idx)
+                .filter(|component| match kind {
+                    SystemComponentKind::SystemMemory | SystemComponentKind::Cpu => {
+                        component.1 == SystemComponentKind::BoardModel
+                    }
+                    SystemComponentKind::BoardModel => {
+                        component.1 == SystemComponentKind::OperatingSystem
+                    }
+                    SystemComponentKind::OperatingSystem => matches!(
+                        component.1,
+                        SystemComponentKind::TerminalEmulator
+                            | SystemComponentKind::WindowManager
+                            | SystemComponentKind::DesktopEnvironment
+                    ),
+                    SystemComponentKind::TerminalEmulator => {
+                        component.1 == SystemComponentKind::CurrentShell
+                    }
+                    _ => false,
+                })
+                .map(|c| {
+                    // these unwraps should be fine :3
+                    let src_port = ports
+                        .get_mut(idx)
+                        .map(|ports| {
+                            let port = ports.0;
+                            ports.0 += 1;
+                            port
+                        })
                         .unwrap();
-                    let src_port = me.0;
-
-                    (src_idx, src_port, dst_idx, dst_port)
+                    let dst_port = ports
+                        .get_mut(&c.0)
+                        .map(|ports| {
+                            let port = ports.1;
+                            ports.1 += 1;
+                            port
+                        })
+                        .unwrap();
+                    (*idx, src_port, c.0, dst_port)
                 })
-                .map(|(src_idx, src_port, dst_idx, dst_port)| {
-                    Connection::new(*src_idx, src_port, *dst_idx, *dst_port)
-                })
-                .collect();
-
-            test
+                .collect::<Vec<_>>()
         })
         .collect();
 
-    let nodes = partial_nodes
+    let components: Vec<CollectedNode> = components
         .into_iter()
-        .map(|(index, kind, body)| {
+        .filter(|(_, _, i)| i.is_some())
+        .map(|(id, kind, info)| {
             let title = kind.title();
-
-            let width = (max(body.len(), title.len()) + 2) as u16;
-
-            let left_side_height = dest_ports.get(&index).map(|c| c.len()).unwrap_or(0);
-            let right_side_height = source_ports.get(&index).map(|c| c.len()).unwrap_or(0);
-
-            let height = 2 + max(left_side_height, right_side_height) as u16;
+            let body = info.unwrap();
+            let width = (max(title.len(), body.len())) + 2;
+            let ports = ports[&id];
+            let height = max(ports.0, ports.1) + 2;
 
             CollectedNode {
-                width,
-                height,
+                width: width as u16,
+                height: height as u16,
                 title,
                 body,
             }
         })
         .collect();
 
-    Ok((nodes, links))
+    let links: Vec<Connection> = links
+        .into_iter()
+        .map(|(from_node, from_port, to_node, to_port)| {
+            Connection::new(from_node, from_port, to_node, to_port)
+        })
+        .collect();
+
+    Ok((components, links))
 }
