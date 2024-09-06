@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::{cmp::max, collections::HashMap, fmt::Display};
+use std::{cmp::max, collections::HashMap};
 use strum::IntoEnumIterator;
 use tui_nodes::Connection;
 
@@ -23,28 +23,6 @@ enum SystemComponentKind {
     WindowManager,
     DesktopEnvironment,
 }
-
-impl Display for SystemComponentKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
-        write!(
-            f,
-            "[ {} ]",
-            match self {
-                SystemComponentKind::Cpu => "CPU",
-                SystemComponentKind::SystemMemory => "RAM",
-                SystemComponentKind::Gpu => "GPU",
-                SystemComponentKind::OperatingSystem => "OS",
-                SystemComponentKind::BoardModel => "Model",
-                SystemComponentKind::CurrentShell => "Shell",
-                SystemComponentKind::TerminalEmulator => "Terminal",
-                SystemComponentKind::DesktopEnvironment => "DE",
-                SystemComponentKind::WindowManager => "WM",
-            }
-        )
-    }
-}
-
-type ComponentLinks = &'static [SystemComponentKind];
 
 impl SystemComponentKind {
     pub fn title(&self) -> &'static str {
@@ -73,32 +51,6 @@ impl SystemComponentKind {
             SystemComponentKind::Gpu => Gpu::collect_info(vt),
         }
     }
-
-    pub const fn get_links(&self) -> ComponentLinks {
-        match self {
-            Self::Cpu => &[Self::BoardModel],
-
-            Self::SystemMemory => &[Self::BoardModel],
-
-            Self::Gpu => &[Self::BoardModel],
-
-            Self::BoardModel => &[Self::OperatingSystem],
-
-            Self::OperatingSystem => &[
-                Self::TerminalEmulator,
-                Self::DesktopEnvironment,
-                Self::WindowManager,
-            ],
-
-            Self::TerminalEmulator => &[Self::CurrentShell],
-
-            Self::CurrentShell => &[],
-
-            Self::DesktopEnvironment => &[],
-
-            Self::WindowManager => &[],
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -112,21 +64,27 @@ pub(crate) struct CollectedNode {
 pub(crate) fn collect(
     visual_toggles: VisualToggles,
 ) -> Result<(Vec<CollectedNode>, Vec<Connection>)> {
-    type ComponentId = usize;
-    let mut component_id_acc: ComponentId = 0;
+    // accumulator to generate component ids
+    let mut component_id_acc: usize = 0;
 
-    let mut ports: HashMap<ComponentId, (usize, usize)> =
+    // gonna allocate for all possible components so this shouldnt need any resizing
+    let mut ports: HashMap<usize, (usize, usize)> =
         HashMap::with_capacity(SystemComponentKind::iter().len());
 
     let components: Vec<_> = SystemComponentKind::iter()
+        // collect info
         .map(|k| (k, k.collect_info(&visual_toggles)))
         .flat_map(|(kind, component_info_outer)| match component_info_outer {
+            // if component is disabled or cant be displayed
             Err(_) => vec![(0, kind, None)],
+            // otherwise
             Ok(component_info) => component_info
                 .into_iter()
                 .map(|info_string| {
+                    // get an id
                     let component_id = component_id_acc;
                     component_id_acc += 1;
+                    // prepare ports entry
                     ports.insert(component_id, (0, 0));
                     (component_id, kind, Some(format!(" {info_string} ")))
                 })
@@ -139,6 +97,7 @@ pub(crate) fn collect(
         .flat_map(|(idx, kind, _info)| {
             components
                 .iter()
+                // we get the linked component(s)
                 .filter(|component| match kind {
                     SystemComponentKind::SystemMemory | SystemComponentKind::Cpu => {
                         component.1 == SystemComponentKind::BoardModel
@@ -157,7 +116,7 @@ pub(crate) fn collect(
                     }
                     _ => false,
                 })
-                .map(|c| {
+                .map(|dst_component| {
                     // these unwraps should be fine :3
                     let src_port = ports
                         .get_mut(idx)
@@ -168,14 +127,14 @@ pub(crate) fn collect(
                         })
                         .unwrap();
                     let dst_port = ports
-                        .get_mut(&c.0)
+                        .get_mut(&dst_component.0)
                         .map(|ports| {
                             let port = ports.1;
                             ports.1 += 1;
                             port
                         })
                         .unwrap();
-                    (*idx, src_port, c.0, dst_port)
+                    (*idx, src_port, dst_component.0, dst_port)
                 })
                 .collect::<Vec<_>>()
         })
@@ -183,12 +142,15 @@ pub(crate) fn collect(
 
     let components: Vec<CollectedNode> = components
         .into_iter()
+        // TODO: properly handle missing components
         .filter(|(_, _, i)| i.is_some())
         .map(|(id, kind, info)| {
             let title = kind.title();
             let body = info.unwrap();
-            let width = (max(title.len(), body.len())) + 2;
             let ports = ports[&id];
+            // 2 is the box's borders, we make sure we can fit either the title or body (or both)
+            let width = (max(title.len(), body.len())) + 2;
+            // same thing with either of the box's sides
             let height = max(ports.0, ports.1) + 2;
 
             CollectedNode {
