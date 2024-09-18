@@ -1596,8 +1596,9 @@ dependencies = [
 
 [[package]]
 name = "tui-nodes"
-version = "0.6.0"
-source = "git+https://git.sr.ht/~iamsolaara/tui-nodes?branch=main#c5983ed3656f1142d72c9729aef055f72756f2e3"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb814fdfc083f6a967b5504698ed841f93213209bac48bb1262fde31c5be41bf"
 dependencies = [
  "log",
  "ratatui",

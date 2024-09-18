@@ -18,7 +18,8 @@ ratatui = "0.28"
 strum = "0.26"
 sysinfo = "0.31"
 tracing = "0.1"
-tui-nodes = { git = "https://git.sr.ht/~iamsolaara/tui-nodes", branch = "main" }
+#tui-nodes = { git = "https://git.sr.ht/~iamsolaara/tui-nodes", branch = "main" }
+tui-nodes = "0.7"
 
 [dev-dependencies]
 testresult = "0.4"
