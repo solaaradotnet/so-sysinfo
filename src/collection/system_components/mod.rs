@@ -119,7 +119,7 @@ impl SystemComponent for CurrentShell {
         debug!("shell(cleaned): {shell}");
 
         // recursively get parent shell process if needed
-        while matches!(shell.as_ref(), "cargo") {
+        while matches!(shell.as_ref(), "cargo") && current_pid.as_u32() >= 1 {
             parent_pid = parent_process
                 .parent()
                 .ok_or(Error::msg("Failed to get parent process."))?;
