@@ -1,6 +1,7 @@
 use anyhow::Result;
 use std::{cmp::max, collections::HashMap};
 use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 use tui_nodes::Connection;
 
 use crate::args::VisualToggles;
@@ -11,7 +12,7 @@ use system_components::{
     SystemMemory, TerminalEmulator, WindowManager,
 };
 
-#[derive(strum::EnumIter, Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
+#[derive(EnumIter, Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
 enum SystemComponentKind {
     Cpu,
     SystemMemory,

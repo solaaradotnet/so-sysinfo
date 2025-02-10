@@ -11,15 +11,16 @@ chrono = "0.4"
 clap = { version = "4.5", features = ["derive"] }
 human_bytes = "0.4"
 lazy_static = "1.5"
-libmacchina = "7.3"
+libmacchina = "8.1"
 num_cpus = "1.16"
 os_info = "3.8"
-ratatui = "0.28"
-strum = "0.26"
-sysinfo = "0.31"
+ratatui = "0.29"
+strum = "0.27"
+strum_macros = "0.27.0"
+sysinfo = "0.33"
 tracing = "0.1"
 #tui-nodes = { git = "https://git.sr.ht/~iamsolaara/tui-nodes", branch = "main" }
-tui-nodes = "0.7"
+tui-nodes = "0.8"
 
 [dev-dependencies]
 testresult = "0.4"
