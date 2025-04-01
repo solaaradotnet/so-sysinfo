@@ -77,7 +77,14 @@ pub(crate) fn collect(
         .map(|k| (k, k.collect_info(&visual_toggles)))
         .flat_map(|(kind, component_info_outer)| match component_info_outer {
             // if component is disabled or cant be displayed
-            Err(_) => vec![(0, kind, None)],
+            Err(_) => {
+                // get an id
+                let component_id = component_id_acc;
+                component_id_acc += 1;
+                // prepare ports entry
+                ports.insert(component_id, (0, 0));
+                vec![(component_id, kind, None)]
+            }
             // otherwise
             Ok(component_info) => component_info
                 .into_iter()
@@ -144,10 +151,10 @@ pub(crate) fn collect(
     let components: Vec<CollectedNode> = components
         .into_iter()
         // TODO: properly handle missing components
-        .filter(|(_, _, i)| i.is_some())
+        //.filter(|(_, _, i)| i.is_some())
         .map(|(id, kind, info)| {
             let title = kind.title();
-            let body = info.unwrap();
+            let body = info.unwrap_or("N/A".to_string());
             let ports = ports[&id];
             // 2 is the box's borders, we make sure we can fit either the title or body (or both)
             let width = (max(title.len(), body.len())) + 2;
