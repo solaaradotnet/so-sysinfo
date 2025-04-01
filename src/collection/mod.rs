@@ -16,7 +16,7 @@ use system_components::{
 enum SystemComponentKind {
     Cpu,
     SystemMemory,
-    Gpu,
+    //Gpu,
     BoardModel,
     OperatingSystem,
     CurrentShell,
@@ -30,7 +30,7 @@ impl SystemComponentKind {
         match self {
             SystemComponentKind::Cpu => "[ CPU ]",
             SystemComponentKind::SystemMemory => "[ RAM ]",
-            SystemComponentKind::Gpu => "[ GPU ]",
+            //SystemComponentKind::Gpu => "[ GPU ]",
             SystemComponentKind::BoardModel => "[ Model ]",
             SystemComponentKind::OperatingSystem => "[ OS ]",
             SystemComponentKind::CurrentShell => "[ Shell ]",
@@ -49,7 +49,7 @@ impl SystemComponentKind {
             SystemComponentKind::DesktopEnvironment => DesktopEnvironment::collect_info(vt),
             SystemComponentKind::WindowManager => WindowManager::collect_info(vt),
             SystemComponentKind::OperatingSystem => OperatingSystem::collect_info(vt),
-            SystemComponentKind::Gpu => Gpu::collect_info(vt),
+            //SystemComponentKind::Gpu => Gpu::collect_info(vt),
         }
     }
 }
