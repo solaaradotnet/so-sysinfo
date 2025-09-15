@@ -2,7 +2,7 @@ use anyhow::Error;
 
 use crate::args::VisualToggles;
 
-use super::{SystemComponent, WindowManager, SYSINFO_DATA};
+use super::{SYSINFO_DATA, SystemComponent, WindowManager};
 
 impl SystemComponent for WindowManager {
     fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {

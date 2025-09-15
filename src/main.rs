@@ -1,14 +1,14 @@
 use anyhow::Result;
 use clap::Parser;
 use ratatui::{
+    Terminal,
     backend::{Backend, CrosstermBackend},
     crossterm::{
-        terminal::{
-            disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, SetTitle,
-        },
         ExecutableCommand,
+        terminal::{
+            EnterAlternateScreen, LeaveAlternateScreen, SetTitle, disable_raw_mode, enable_raw_mode,
+        },
     },
-    Terminal,
 };
 use std::io::stdout;
 

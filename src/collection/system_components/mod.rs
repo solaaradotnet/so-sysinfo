@@ -63,9 +63,11 @@ impl SystemComponent for Gpu {
 
 impl SystemComponent for BoardModel {
     fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
-        Ok(vec![LIBMACCHINA_GENERAL_READOUT
-            .machine()
-            .unwrap_or("Generic".to_string())])
+        Ok(vec![
+            LIBMACCHINA_GENERAL_READOUT
+                .machine()
+                .unwrap_or("Generic".to_string()),
+        ])
     }
 }
 
@@ -165,28 +167,32 @@ impl SystemComponent for TerminalEmulator {
 #[cfg(not(target_os = "macos"))]
 impl SystemComponent for WindowManager {
     fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
-        Ok(vec![LIBMACCHINA_GENERAL_READOUT
-            .window_manager()
-            .map_err(|_| Error::msg("Failed to get window manager"))?])
+        Ok(vec![
+            LIBMACCHINA_GENERAL_READOUT
+                .window_manager()
+                .map_err(|_| Error::msg("Failed to get window manager"))?,
+        ])
     }
 }
 
 #[cfg(not(target_os = "windows"))]
 impl SystemComponent for DesktopEnvironment {
     fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
-        Ok(vec![LIBMACCHINA_GENERAL_READOUT
-            .desktop_environment()
-            .map_err(|_| {
-                Error::msg("Failed to get desktop environment")
-            })?])
+        Ok(vec![
+            LIBMACCHINA_GENERAL_READOUT
+                .desktop_environment()
+                .map_err(|_| Error::msg("Failed to get desktop environment"))?,
+        ])
     }
 }
 
 impl SystemComponent for Hostname {
     fn collect_info(_: &VisualToggles) -> Result<Vec<String>, Error> {
-        Ok(vec![LIBMACCHINA_GENERAL_READOUT
-            .hostname()
-            .map_err(|_| Error::msg("Failed to get hostname."))?])
+        Ok(vec![
+            LIBMACCHINA_GENERAL_READOUT
+                .hostname()
+                .map_err(|_| Error::msg("Failed to get hostname."))?,
+        ])
     }
 }
 
