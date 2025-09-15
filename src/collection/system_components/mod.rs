@@ -155,7 +155,7 @@ impl SystemComponent for CurrentShell {
 impl SystemComponent for TerminalEmulator {
     fn collect_info(visual_toggles: &VisualToggles) -> Result<Vec<String>, Error> {
         if visual_toggles.hide_terminal_version {
-            std::env::remove_var("TERM_PROGRAM_VERSION")
+            unsafe { std::env::remove_var("TERM_PROGRAM_VERSION") }
         }
         Ok(vec![LIBMACCHINA_GENERAL_READOUT.terminal().map_err(
             |_| Error::msg("Failed to get terminal application"),

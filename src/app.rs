@@ -10,7 +10,7 @@ use ratatui::{
     prelude::Margin,
     style::{Color, Style, Stylize},
     text::Text,
-    widgets::{block::Title, Block, Borders, Clear, Paragraph},
+    widgets::{Block, Borders, Clear, Paragraph},
 };
 use std::time::Instant;
 use tracing::trace;
@@ -146,10 +146,9 @@ pub(crate) fn app<T: Backend>(
                     .border_type(ratatui::widgets::BorderType::Rounded)
                     .border_style(Style::new().fg(app_state.fg_color))
                     .borders(Borders::TOP)
-                    .title(
-                        Title::from(" ".to_owned() + hostname.as_ref() + " ")
-                            .alignment(ratatui::layout::Alignment::Center),
-                    );
+                    .title_top(format!(" {hostname} "))
+                    .title_alignment(ratatui::layout::Alignment::Center);
+
                 frame.render_widget(&window_widget, body_area);
                 trace!("window frame drawn {:?}", frame_start.elapsed());
 
