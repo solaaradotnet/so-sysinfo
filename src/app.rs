@@ -2,6 +2,7 @@ use crate::collection::system_components::SystemComponent;
 use crate::collection::{collect, system_components::Hostname};
 use crate::logos::LogoKind;
 use anyhow::Result;
+use ratatui::crossterm::event::KeyModifiers;
 use ratatui::{
     backend::Backend,
     crossterm::event::{self, KeyCode, KeyEventKind},
@@ -214,10 +215,12 @@ pub(crate) fn app<T: Backend>(
             trace!("polled for event {:?}", frame_start.elapsed());
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
-                    match key.code {
-                        KeyCode::Char('q') => break,
-                        KeyCode::Char('c') => app_state.cycle_next_color(),
-                        KeyCode::Char('l') => app_state.cycle_next_logo(),
+                    match (key.code, key.modifiers) {
+                        (KeyCode::Char('q'), _) | (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
+                            break;
+                        }
+                        (KeyCode::Char('c'), _) => app_state.cycle_next_color(),
+                        (KeyCode::Char('l'), _) => app_state.cycle_next_logo(),
                         _ => {}
                     }
                 }
