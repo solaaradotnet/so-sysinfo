@@ -14,6 +14,7 @@ impl SystemComponent for WindowManager {
             "Amethyst",
             "Spectacle",
             "Rectangle",
+            "AeroSpace",
         ] {
             if SYSINFO_DATA
                 .processes_by_exact_name(OsStr::new(wm))
